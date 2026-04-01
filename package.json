@@ -1,0 +1,76 @@
+{
+	"name": "social-mcp",
+	"version": "2.0.0",
+	"description": "MCP server for posting and interacting across social media platforms: Twitter, Instagram, Facebook, WhatsApp, Discord, Telegram, and Slack",
+	"main": "dist/index.js",
+	"type": "module",
+	"bin": {
+		"social-mcp": "dist/index.js"
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build": "tsc && shx chmod +x dist/index.js",
+		"prepare": "husky",
+		"watch": "tsc --watch",
+		"start": "node dist/index.js",
+		"release": "pnpm run build && changeset publish",
+		"format": "biome format . --write",
+		"lint": "biome check ."
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.js"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nxGnosis/social-mcp.git"
+	},
+	"bugs": {
+		"url": "https://github.com/nxGnosis/social-mcp/issues"
+	},
+	"homepage": "https://github.com/nxGnosis/social-mcp#readme",
+	"keywords": [
+		"mcp",
+		"model-context-protocol",
+		"social-media",
+		"twitter",
+		"instagram",
+		"facebook",
+		"whatsapp",
+		"discord",
+		"telegram",
+		"slack",
+		"ai",
+		"llm",
+		"automation"
+	],
+	"author": "Lanre Sanni",
+	"license": "ISC",
+	"packageManager": "pnpm@10.7.1",
+	"dependencies": {
+		"@slack/web-api": "^7.14.1",
+		"dedent": "^1.7.1",
+		"dotenv": "^17.3.1",
+		"fastmcp": "^3.33.0",
+		"telegraf": "^4.16.3",
+		"twitter-api-v2": "^1.29.0",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "*",
+		"@changesets/cli": "^2.29.8",
+		"@types/node": "^22.15.19",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.2",
+		"shx": "^0.3.4",
+		"typescript": "^5.8.3",
+		"ts-node": "^10.9.2"
+	}
+}
