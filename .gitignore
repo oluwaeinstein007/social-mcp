@@ -10,3 +10,6 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# npm key
+.npmrc
