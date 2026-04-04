@@ -30,12 +30,12 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nxGnosis/social-mcp.git"
+		"url": "git+https://github.com/oluwaeinstein007/social-mcp.git"
 	},
 	"bugs": {
-		"url": "https://github.com/nxGnosis/social-mcp/issues"
+		"url": "https://github.com/oluwaeinstein007/social-mcp/issues"
 	},
-	"homepage": "https://github.com/nxGnosis/social-mcp#readme",
+	"homepage": "https://github.com/oluwaeinstein007/social-mcp#readme",
 	"keywords": [
 		"mcp",
 		"model-context-protocol",
