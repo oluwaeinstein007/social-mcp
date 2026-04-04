@@ -1,6 +1,6 @@
 {
 	"name": "social-mcp",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"description": "MCP server for posting and interacting across social media platforms: Twitter, Instagram, Facebook, WhatsApp, Discord, Telegram, and Slack",
 	"main": "dist/index.js",
 	"type": "module",
