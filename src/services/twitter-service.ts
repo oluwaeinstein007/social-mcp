@@ -1,4 +1,5 @@
 import { TwitterApi } from "twitter-api-v2";
+import { CredentialsError } from "../lib/errors.js";
 
 export class TwitterService {
 	private client: TwitterApi;
@@ -9,17 +10,21 @@ export class TwitterService {
 		const accessToken = process.env.TWITTER_ACCESS_TOKEN;
 		const accessSecret = process.env.TWITTER_ACCESS_SECRET;
 
-		if (!appKey || !appSecret || !accessToken || !accessSecret) {
-			throw new Error(
-				"Twitter API credentials are not fully configured in environment variables",
-			);
+		const missing: string[] = [];
+		if (!appKey) missing.push("TWITTER_APP_KEY");
+		if (!appSecret) missing.push("TWITTER_APP_SECRET");
+		if (!accessToken) missing.push("TWITTER_ACCESS_TOKEN");
+		if (!accessSecret) missing.push("TWITTER_ACCESS_SECRET");
+
+		if (missing.length > 0) {
+			throw new CredentialsError("Twitter", missing);
 		}
 
 		this.client = new TwitterApi({
-			appKey,
-			appSecret,
-			accessToken,
-			accessSecret,
+			appKey: appKey as string,
+			appSecret: appSecret as string,
+			accessToken: accessToken as string,
+			accessSecret: accessSecret as string,
 		});
 	}
 
@@ -30,6 +35,40 @@ export class TwitterService {
 		} catch (error) {
 			throw new Error(
 				`Failed to send tweet: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	async replyToTweet(tweetId: string, text: string) {
+		try {
+			const { data: reply } = await this.client.v2.reply(text, tweetId);
+			return reply;
+		} catch (error) {
+			throw new Error(
+				`Failed to reply to tweet: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	async likeTweet(tweetId: string) {
+		try {
+			const me = await this.client.v2.me();
+			const result = await this.client.v2.like(me.data.id, tweetId);
+			return result.data;
+		} catch (error) {
+			throw new Error(
+				`Failed to like tweet: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	async deleteTweet(tweetId: string) {
+		try {
+			const result = await this.client.v2.deleteTweet(tweetId);
+			return result.data;
+		} catch (error) {
+			throw new Error(
+				`Failed to delete tweet: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
 		}
 	}
@@ -54,7 +93,6 @@ export class TwitterService {
 
 	async searchTweets(query: string, maxResults = 10) {
 		try {
-			// Return the full paginator so callers have access to both .data and .meta
 			const result = await this.client.v2.search(query, {
 				max_results: maxResults,
 				"tweet.fields": ["created_at", "author_id", "public_metrics"],
@@ -66,4 +104,10 @@ export class TwitterService {
 			);
 		}
 	}
+}
+
+let _instance: TwitterService | undefined;
+export function getTwitterService(): TwitterService {
+	if (!_instance) _instance = new TwitterService();
+	return _instance;
 }

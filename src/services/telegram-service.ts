@@ -1,4 +1,5 @@
 import { Telegraf } from "telegraf";
+import { CredentialsError } from "../lib/errors.js";
 
 export interface ChannelInfo {
 	id: number;
@@ -22,7 +23,7 @@ export class TelegramService {
 	constructor() {
 		const botToken = process.env.TELEGRAM_BOT_TOKEN;
 		if (!botToken) {
-			throw new Error("TELEGRAM_BOT_TOKEN environment variable is required");
+			throw new CredentialsError("Telegram", ["TELEGRAM_BOT_TOKEN"]);
 		}
 		this.bot = new Telegraf(botToken);
 	}
@@ -33,7 +34,6 @@ export class TelegramService {
 	): Promise<MessageInfo> {
 		try {
 			const message = await this.bot.telegram.sendMessage(chatId, text);
-
 			return {
 				messageId: message.message_id,
 				chatId: message.chat.id,
@@ -47,12 +47,53 @@ export class TelegramService {
 		}
 	}
 
+	async editMessage(
+		chatId: string | number,
+		messageId: number,
+		text: string,
+	): Promise<MessageInfo> {
+		try {
+			const message = await this.bot.telegram.editMessageText(
+				chatId,
+				messageId,
+				undefined,
+				text,
+			);
+			if (typeof message === "boolean") {
+				throw new Error("Edit returned unexpected boolean response");
+			}
+			return {
+				messageId: message.message_id,
+				chatId: message.chat.id,
+				text: "text" in message ? message.text : undefined,
+				date: message.date,
+			};
+		} catch (error) {
+			throw new Error(
+				`Failed to edit message: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	async deleteMessage(
+		chatId: string | number,
+		messageId: number,
+	): Promise<boolean> {
+		try {
+			await this.bot.telegram.deleteMessage(chatId, messageId);
+			return true;
+		} catch (error) {
+			throw new Error(
+				`Failed to delete message: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
 	async getChannelInfo(channelId: string | number): Promise<ChannelInfo> {
 		try {
 			const chat = await this.bot.telegram.getChat(channelId);
 			const memberCount =
 				await this.bot.telegram.getChatMembersCount(channelId);
-
 			return {
 				id: chat.id,
 				title: "title" in chat ? chat.title : "Private Chat",
@@ -79,7 +120,6 @@ export class TelegramService {
 				fromChatId,
 				messageId,
 			);
-
 			return {
 				messageId: message.message_id,
 				chatId: message.chat.id,
@@ -121,7 +161,6 @@ export class TelegramService {
 		try {
 			const administrators =
 				await this.bot.telegram.getChatAdministrators(channelId);
-
 			return administrators.slice(0, limit).map((member) => ({
 				userId: member.user.id,
 				username: member.user.username,
@@ -135,4 +174,10 @@ export class TelegramService {
 			);
 		}
 	}
+}
+
+let _instance: TelegramService | undefined;
+export function getTelegramService(): TelegramService {
+	if (!_instance) _instance = new TelegramService();
+	return _instance;
 }

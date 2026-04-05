@@ -1,6 +1,6 @@
-import dedent from "dedent";
 import { z } from "zod";
-import { TelegramService } from "../../services/telegram-service.js";
+import { CredentialsError } from "../../lib/errors.js";
+import { getTelegramService } from "../../services/telegram-service.js";
 
 const sendMessageParams = z.object({
 	chatId: z
@@ -14,34 +14,19 @@ const sendMessageParams = z.object({
 type SendMessageParams = z.infer<typeof sendMessageParams>;
 
 export const sendMessageTool = {
-	name: "SEND_MESSAGE",
+	name: "TELEGRAM_SEND_MESSAGE",
 	description: "Send a message to a Telegram chat or channel",
 	parameters: sendMessageParams,
 	execute: async (params: SendMessageParams) => {
-		const telegramService = new TelegramService();
-
 		try {
-			const messageInfo = await telegramService.sendMessage(
+			const messageInfo = await getTelegramService().sendMessage(
 				params.chatId,
 				params.text,
 			);
-
-			return dedent`
-				Message sent successfully!
-
-				Message ID: ${messageInfo.messageId}
-				Chat ID: ${messageInfo.chatId}
-				Sent at: ${new Date(messageInfo.date * 1000).toISOString()}
-				Text: ${messageInfo.text || "N/A"}
-			`;
+			return `Message sent successfully!\n\nMessage ID: ${messageInfo.messageId}\nChat ID: ${messageInfo.chatId}\nSent at: ${new Date(messageInfo.date * 1000).toISOString()}\nText: ${messageInfo.text ?? "N/A"}`;
 		} catch (error) {
-			if (error instanceof Error) {
-				if (error.message.includes("BOT_TOKEN")) {
-					return "Error: Telegram bot token is not configured. Please set the TELEGRAM_BOT_TOKEN environment variable.";
-				}
-				return `Error sending message: ${error.message}`;
-			}
-			return "An unknown error occurred while sending the message";
+			if (error instanceof CredentialsError) return `Error: ${error.message}`;
+			return `Error sending message: ${error instanceof Error ? error.message : "Unknown error"}`;
 		}
 	},
 } as const;

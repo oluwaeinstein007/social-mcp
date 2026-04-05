@@ -11,14 +11,16 @@
 		"dist"
 	],
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "tsc && shx chmod +x dist/index.js",
+		"clean": "shx rm -rf dist",
 		"prepare": "husky",
 		"watch": "tsc --watch",
 		"start": "node dist/index.js",
 		"release": "pnpm run build && changeset publish",
 		"format": "biome format . --write",
-		"lint": "biome check ."
+		"lint": "biome check .",
+		"test": "vitest run",
+		"test:watch": "vitest"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -56,7 +58,6 @@
 	"packageManager": "pnpm@10.7.1",
 	"dependencies": {
 		"@slack/web-api": "^7.14.1",
-		"dedent": "^1.7.1",
 		"dotenv": "^17.3.1",
 		"fastmcp": "^3.33.0",
 		"telegraf": "^4.16.3",
@@ -71,6 +72,7 @@
 		"lint-staged": "^15.5.2",
 		"shx": "^0.3.4",
 		"typescript": "^5.8.3",
-		"ts-node": "^10.9.2"
+		"ts-node": "^10.9.2",
+		"vitest": "^3.2.4"
 	}
 }

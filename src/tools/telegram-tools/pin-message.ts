@@ -1,6 +1,6 @@
-import dedent from "dedent";
 import { z } from "zod";
-import { TelegramService } from "../../services/telegram-service.js";
+import { CredentialsError } from "../../lib/errors.js";
+import { getTelegramService } from "../../services/telegram-service.js";
 
 const pinMessageParams = z.object({
 	chatId: z
@@ -13,36 +13,16 @@ const pinMessageParams = z.object({
 type PinMessageParams = z.infer<typeof pinMessageParams>;
 
 export const pinMessageTool = {
-	name: "PIN_MESSAGE",
+	name: "TELEGRAM_PIN_MESSAGE",
 	description: "Pin a message in a Telegram chat or channel",
 	parameters: pinMessageParams,
 	execute: async (params: PinMessageParams) => {
-		const telegramService = new TelegramService();
-
 		try {
-			const success = await telegramService.pinMessage(
-				params.chatId,
-				params.messageId,
-			);
-
-			if (success) {
-				return dedent`
-					Message pinned successfully!
-
-					Chat ID: ${params.chatId}
-					Message ID: ${params.messageId}
-					Silent: ${params.disableNotification ? "Yes" : "No"}
-				`;
-			}
-			return "Failed to pin message";
+			await getTelegramService().pinMessage(params.chatId, params.messageId);
+			return `Message pinned successfully!\n\nChat ID: ${params.chatId}\nMessage ID: ${params.messageId}\nSilent: ${params.disableNotification ? "Yes" : "No"}`;
 		} catch (error) {
-			if (error instanceof Error) {
-				if (error.message.includes("BOT_TOKEN")) {
-					return "Error: Telegram bot token is not configured. Please set the TELEGRAM_BOT_TOKEN environment variable.";
-				}
-				return `Error pinning message: ${error.message}`;
-			}
-			return "An unknown error occurred while pinning the message";
+			if (error instanceof CredentialsError) return `Error: ${error.message}`;
+			return `Error pinning message: ${error instanceof Error ? error.message : "Unknown error"}`;
 		}
 	},
 } as const;

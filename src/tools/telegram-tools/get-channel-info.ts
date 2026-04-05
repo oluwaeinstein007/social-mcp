@@ -1,6 +1,6 @@
-import dedent from "dedent";
 import { z } from "zod";
-import { TelegramService } from "../../services/telegram-service.js";
+import { CredentialsError } from "../../lib/errors.js";
+import { getTelegramService } from "../../services/telegram-service.js";
 
 const getChannelInfoParams = z.object({
 	channelId: z
@@ -13,35 +13,16 @@ const getChannelInfoParams = z.object({
 type GetChannelInfoParams = z.infer<typeof getChannelInfoParams>;
 
 export const getChannelInfoTool = {
-	name: "GET_CHANNEL_INFO",
+	name: "TELEGRAM_GET_CHANNEL_INFO",
 	description: "Get information about a Telegram channel or chat",
 	parameters: getChannelInfoParams,
 	execute: async (params: GetChannelInfoParams) => {
-		const telegramService = new TelegramService();
-
 		try {
-			const channelInfo = await telegramService.getChannelInfo(
-				params.channelId,
-			);
-
-			return dedent`
-				Channel Information:
-
-				Title: ${channelInfo.title}
-				ID: ${channelInfo.id}
-				Type: ${channelInfo.type}
-				Username: ${channelInfo.username || "N/A"}
-				Description: ${channelInfo.description || "N/A"}
-				Member Count: ${channelInfo.memberCount || "N/A"}
-			`;
+			const info = await getTelegramService().getChannelInfo(params.channelId);
+			return `Channel Information:\n\nTitle: ${info.title}\nID: ${info.id}\nType: ${info.type}\nUsername: ${info.username ?? "N/A"}\nDescription: ${info.description ?? "N/A"}\nMember Count: ${info.memberCount ?? "N/A"}`;
 		} catch (error) {
-			if (error instanceof Error) {
-				if (error.message.includes("BOT_TOKEN")) {
-					return "Error: Telegram bot token is not configured. Please set the TELEGRAM_BOT_TOKEN environment variable.";
-				}
-				return `Error getting channel info: ${error.message}`;
-			}
-			return "An unknown error occurred while getting channel information";
+			if (error instanceof CredentialsError) return `Error: ${error.message}`;
+			return `Error getting channel info: ${error instanceof Error ? error.message : "Unknown error"}`;
 		}
 	},
 } as const;
