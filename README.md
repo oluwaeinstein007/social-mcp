@@ -6,7 +6,7 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 
 | Platform  | Tools |
 |-----------|-------|
-| Telegram  | Send message, get channel info, forward message, pin message, get channel members |
+| Telegram  | Send message, get channel info, forward message, pin message, get channel administrators |
 | Twitter/X | Send tweet, get user info, search tweets |
 | Discord   | Send message |
 | WhatsApp  | Send message, get messages |

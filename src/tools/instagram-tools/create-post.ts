@@ -4,7 +4,7 @@ import { InstagramService } from "../../services/instagram-service.js";
 
 const createPostParams = z.object({
   userId: z.string().describe("The Instagram user ID"),
-  imageUrl: z.string().url().describe("The URL of the image to post (optional)"),
+  imageUrl: z.string().url().describe("The URL of the image to post"),
   message: z.string().min(1).describe("The text content of the Instagram post"),
 });
 
@@ -18,7 +18,6 @@ export const createPostTool = {
     const instagramService = new InstagramService();
 
     try {
-      // Call createPost with userId, imageUrl, and message
       const post = await instagramService.createPost(params.userId, params.imageUrl, params.message);
 
       return dedent`

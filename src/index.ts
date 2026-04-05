@@ -28,7 +28,7 @@ import { sendMessageTool as slackSendMessageTool } from "./tools/slack-tools/sen
 async function main() {
 	const server = new FastMCP({
 		name: "Social MCP Server",
-		version: "1.1.1",
+		version: "1.2.0",
 	});
 
 	// Add Telegram tools

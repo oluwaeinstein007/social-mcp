@@ -11,14 +11,14 @@ const getChannelMembersParams = z.object({
 		.min(1)
 		.max(50)
 		.default(10)
-		.describe("Maximum number of members to retrieve (1-50)"),
+		.describe("Maximum number of administrators to retrieve (1-50)"),
 });
 
 type GetChannelMembersParams = z.infer<typeof getChannelMembersParams>;
 
 export const getChannelMembersTool = {
 	name: "GET_CHANNEL_MEMBERS",
-	description: "Get a list of channel administrators and members",
+	description: "Get a list of channel administrators",
 	parameters: getChannelMembersParams,
 	execute: async (params: GetChannelMembersParams) => {
 		const telegramService = new TelegramService();
@@ -30,7 +30,7 @@ export const getChannelMembersTool = {
 			);
 
 			if (members.length === 0) {
-				return "No members found or insufficient permissions to view members.";
+				return "No administrators found or insufficient permissions to view administrators.";
 			}
 
 			const membersList = members
@@ -48,7 +48,7 @@ export const getChannelMembersTool = {
 				.join("\n\n");
 
 			return dedent`
-				Channel Members (showing ${members.length} members):
+				Channel Administrators (showing ${members.length}):
 
 				${membersList}
 			`;
