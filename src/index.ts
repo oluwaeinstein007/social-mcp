@@ -18,6 +18,7 @@ import { createPostTool as instagramCreatePostTool } from "./tools/instagram-too
 import { getPostsTool as instagramGetPostsTool } from "./tools/instagram-tools/get-posts.js";
 import { addCommentTool as linkedInAddCommentTool } from "./tools/linkedin-tools/add-comment.js";
 import { createPostTool as linkedInCreatePostTool } from "./tools/linkedin-tools/create-post.js";
+import { deletePostTool as linkedInDeletePostTool } from "./tools/linkedin-tools/delete-post.js";
 import { getPostsTool as linkedInGetPostsTool } from "./tools/linkedin-tools/get-posts.js";
 import { getProfileTool as linkedInGetProfileTool } from "./tools/linkedin-tools/get-profile.js";
 import { likePostTool as linkedInLikePostTool } from "./tools/linkedin-tools/like-post.js";
@@ -115,6 +116,7 @@ async function main() {
 	server.addTool(linkedInGetProfileTool);
 	server.addTool(linkedInCreatePostTool);
 	server.addTool(linkedInGetPostsTool);
+	server.addTool(linkedInDeletePostTool);
 	server.addTool(linkedInLikePostTool);
 	server.addTool(linkedInAddCommentTool);
 	server.addTool(linkedInSearchPeopleTool);

@@ -151,6 +151,17 @@ export class LinkedInService {
 		);
 	}
 
+	async deletePost(ugcPostUrn: string) {
+		const encoded = encodeURIComponent(ugcPostUrn);
+		const response = await fetch(`${this.baseUrl}/ugcPosts/${encoded}`, {
+			method: "DELETE",
+			headers: this.headers,
+		});
+		if (!response.ok) {
+			throw new Error(`LinkedIn API error ${response.status}: ${await response.text()}`);
+		}
+	}
+
 	async searchPeople(keywords: string, count = 10) {
 		const params = new URLSearchParams({
 			q: "people",

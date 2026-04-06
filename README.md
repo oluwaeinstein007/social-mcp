@@ -172,9 +172,12 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 - **GET_LINKEDIN_PROFILE** — Get the authenticated user's profile information
 - **CREATE_LINKEDIN_POST** — Create a UGC post (`authorUrn`, `text`, `visibility`)
 - **GET_LINKEDIN_POSTS** — Retrieve recent posts by a member or organization (`authorUrn`, `count`)
+- **DELETE_LINKEDIN_POST** — Delete a UGC post (`ugcPostUrn`)
 - **LIKE_LINKEDIN_POST** — Like a post (`actorUrn`, `ugcPostUrn`)
 - **ADD_LINKEDIN_COMMENT** — Comment on a post (`actorUrn`, `ugcPostUrn`, `text`)
 - **SEARCH_LINKEDIN_PEOPLE** — Search for people by keywords (`keywords`, `count`)
+
+> **Note:** `SEARCH_LINKEDIN_PEOPLE` uses the LinkedIn People Search API which requires [Partner Program](https://learn.microsoft.com/en-us/linkedin/talent/recruiter-system-connect/getting-access) access. Most developer apps will receive a 403. All other tools work with a standard OAuth 2.0 token.
 
 ## Development
 

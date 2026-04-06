@@ -45,6 +45,10 @@ const linkedInAddCommentParams = z.object({
 	text: z.string().min(1).max(1250),
 });
 
+const linkedInDeletePostParams = z.object({
+	ugcPostUrn: z.string().min(1),
+});
+
 describe("SEND_TWEET param schema", () => {
 	it("accepts valid text", () => {
 		expect(() => sendTweetParams.parse({ text: "Hello!" })).not.toThrow();
@@ -213,6 +217,20 @@ describe("ADD_LINKEDIN_COMMENT param schema", () => {
 				ugcPostUrn: "urn:li:ugcPost:123456",
 				text: "a".repeat(1251),
 			}),
+		).toThrow();
+	});
+});
+
+describe("DELETE_LINKEDIN_POST param schema", () => {
+	it("accepts a valid URN", () => {
+		expect(() =>
+			linkedInDeletePostParams.parse({ ugcPostUrn: "urn:li:ugcPost:123456" }),
+		).not.toThrow();
+	});
+
+	it("rejects empty URN", () => {
+		expect(() =>
+			linkedInDeletePostParams.parse({ ugcPostUrn: "" }),
 		).toThrow();
 	});
 });
