@@ -28,6 +28,23 @@ const discordGetMessagesParams = z.object({
 	limit: z.number().int().min(1).max(100).default(50),
 });
 
+const linkedInCreatePostParams = z.object({
+	authorUrn: z.string().min(1),
+	text: z.string().min(1).max(3000),
+	visibility: z.enum(["PUBLIC", "CONNECTIONS", "LOGGED_IN"]).default("PUBLIC"),
+});
+
+const linkedInGetPostsParams = z.object({
+	authorUrn: z.string().min(1),
+	count: z.number().int().min(1).max(100).default(10),
+});
+
+const linkedInAddCommentParams = z.object({
+	actorUrn: z.string().min(1),
+	ugcPostUrn: z.string().min(1),
+	text: z.string().min(1).max(1250),
+});
+
 describe("SEND_TWEET param schema", () => {
 	it("accepts valid text", () => {
 		expect(() => sendTweetParams.parse({ text: "Hello!" })).not.toThrow();
@@ -108,6 +125,94 @@ describe("GET_DISCORD_MESSAGES param schema", () => {
 	it("rejects limit above 100", () => {
 		expect(() =>
 			discordGetMessagesParams.parse({ channelId: "123", limit: 101 }),
+		).toThrow();
+	});
+});
+
+describe("CREATE_LINKEDIN_POST param schema", () => {
+	it("accepts valid params with default visibility", () => {
+		const parsed = linkedInCreatePostParams.parse({
+			authorUrn: "urn:li:person:ABC123",
+			text: "Hello LinkedIn!",
+		});
+		expect(parsed.visibility).toBe("PUBLIC");
+	});
+
+	it("rejects empty text", () => {
+		expect(() =>
+			linkedInCreatePostParams.parse({
+				authorUrn: "urn:li:person:ABC123",
+				text: "",
+			}),
+		).toThrow();
+	});
+
+	it("rejects text over 3000 chars", () => {
+		expect(() =>
+			linkedInCreatePostParams.parse({
+				authorUrn: "urn:li:person:ABC123",
+				text: "a".repeat(3001),
+			}),
+		).toThrow();
+	});
+
+	it("rejects invalid visibility value", () => {
+		expect(() =>
+			linkedInCreatePostParams.parse({
+				authorUrn: "urn:li:person:ABC123",
+				text: "Hello",
+				visibility: "PRIVATE",
+			}),
+		).toThrow();
+	});
+});
+
+describe("GET_LINKEDIN_POSTS param schema", () => {
+	it("defaults count to 10", () => {
+		const parsed = linkedInGetPostsParams.parse({
+			authorUrn: "urn:li:person:ABC123",
+		});
+		expect(parsed.count).toBe(10);
+	});
+
+	it("rejects count above 100", () => {
+		expect(() =>
+			linkedInGetPostsParams.parse({
+				authorUrn: "urn:li:person:ABC123",
+				count: 101,
+			}),
+		).toThrow();
+	});
+});
+
+describe("ADD_LINKEDIN_COMMENT param schema", () => {
+	it("accepts valid params", () => {
+		expect(() =>
+			linkedInAddCommentParams.parse({
+				actorUrn: "urn:li:person:ABC123",
+				ugcPostUrn: "urn:li:ugcPost:123456",
+				text: "Great post!",
+			}),
+		).not.toThrow();
+	});
+
+	it("rejects empty comment text", () => {
+		expect(() =>
+			linkedInAddCommentParams.parse({
+				actorUrn: "urn:li:person:ABC123",
+				ugcPostUrn: "urn:li:ugcPost:123456",
+				text: "",
+			}),
+		).toThrow();
+	});
+
+	it("rejects text over 1250 chars", () => {
+		expect(() =>
+			linkedInAddCommentParams.parse({
+				actorUrn: "urn:li:person:ABC123",
+				ugcPostUrn: "urn:li:ugcPost:123456",
+				text: "a".repeat(1251),
+			}),
 		).toThrow();
 	});
 });

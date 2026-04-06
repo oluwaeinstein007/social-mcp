@@ -85,3 +85,30 @@ describe("DiscordService credential validation", () => {
 		expect(() => new DiscordService()).toThrow(CredentialsError);
 	});
 });
+
+describe("LinkedInService credential validation", () => {
+	beforeEach(() => saveEnv(["LINKEDIN_ACCESS_TOKEN"]));
+	afterEach(() => restoreEnv(["LINKEDIN_ACCESS_TOKEN"]));
+
+	it("throws CredentialsError when token is missing", async () => {
+		delete process.env.LINKEDIN_ACCESS_TOKEN;
+		const { LinkedInService } = await import(
+			"../services/linkedin-service.js"
+		);
+		expect(() => new LinkedInService()).toThrow(CredentialsError);
+	});
+
+	it("CredentialsError message lists missing var", async () => {
+		delete process.env.LINKEDIN_ACCESS_TOKEN;
+		const { LinkedInService } = await import(
+			"../services/linkedin-service.js"
+		);
+		let msg = "";
+		try {
+			new LinkedInService();
+		} catch (e) {
+			if (e instanceof CredentialsError) msg = e.message;
+		}
+		expect(msg).toContain("LINKEDIN_ACCESS_TOKEN");
+	});
+});

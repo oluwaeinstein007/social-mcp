@@ -13,6 +13,7 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | Facebook  | Create post, get posts |
 | Instagram | Create post, get posts |
 | Slack     | Send message, get messages, list channels |
+| LinkedIn  | Get profile, create post, get posts, like post, add comment, search people |
 
 ## Quick Start
 
@@ -52,7 +53,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "WHATSAPP_PHONE_NUMBER_ID": "your_id",
         "FACEBOOK_ACCESS_TOKEN": "your_token",
         "INSTAGRAM_ACCESS_TOKEN": "your_token",
-        "SLACK_BOT_TOKEN": "your_token"
+        "SLACK_BOT_TOKEN": "your_token",
+        "LINKEDIN_ACCESS_TOKEN": "your_token"
       }
     }
   }
@@ -120,6 +122,11 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 |----------|-------------|
 | `SLACK_BOT_TOKEN` | Bot token from [api.slack.com](https://api.slack.com/apps) — requires `chat:write`, `channels:history`, `channels:read` scopes |
 
+### LinkedIn
+| Variable | Description |
+|----------|-------------|
+| `LINKEDIN_ACCESS_TOKEN` | OAuth 2.0 access token from the [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps) — requires `r_liteprofile`, `w_member_social` scopes |
+
 ## Available Tools
 
 ### Telegram
@@ -160,6 +167,14 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 - **SEND_SLACK_MESSAGE** — Send a message to a channel (`channelId`, `text`)
 - **GET_SLACK_MESSAGES** — Retrieve recent messages from a channel (`channelId`, `limit`)
 - **LIST_SLACK_CHANNELS** — List public channels in the workspace (`limit`)
+
+### LinkedIn
+- **GET_LINKEDIN_PROFILE** — Get the authenticated user's profile information
+- **CREATE_LINKEDIN_POST** — Create a UGC post (`authorUrn`, `text`, `visibility`)
+- **GET_LINKEDIN_POSTS** — Retrieve recent posts by a member or organization (`authorUrn`, `count`)
+- **LIKE_LINKEDIN_POST** — Like a post (`actorUrn`, `ugcPostUrn`)
+- **ADD_LINKEDIN_COMMENT** — Comment on a post (`actorUrn`, `ugcPostUrn`, `text`)
+- **SEARCH_LINKEDIN_PEOPLE** — Search for people by keywords (`keywords`, `count`)
 
 ## Development
 

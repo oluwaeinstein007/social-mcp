@@ -19,4 +19,8 @@ export const config = {
 		baseUrl: META_BASE,
 		accessToken: process.env.INSTAGRAM_ACCESS_TOKEN || "",
 	},
+	linkedin: {
+		baseUrl: "https://api.linkedin.com/v2",
+		accessToken: process.env.LINKEDIN_ACCESS_TOKEN || "",
+	},
 };
