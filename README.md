@@ -14,6 +14,9 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | Instagram | Create post, get posts |
 | Slack     | Send message, get messages, list channels |
 | LinkedIn  | Get profile, create post, get posts, like post, add comment, search people |
+| Reddit    | Submit post, get posts, comment, vote, search, get user info |
+| Threads   | Get profile, create post, reply, get posts, delete post |
+| TikTok    | Query creator info, get user info, post video, photo post, get post status |
 
 ## Quick Start
 
@@ -54,7 +57,14 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "FACEBOOK_ACCESS_TOKEN": "your_token",
         "INSTAGRAM_ACCESS_TOKEN": "your_token",
         "SLACK_BOT_TOKEN": "your_token",
-        "LINKEDIN_ACCESS_TOKEN": "your_token"
+        "LINKEDIN_ACCESS_TOKEN": "your_token",
+        "REDDIT_CLIENT_ID": "your_client_id",
+        "REDDIT_CLIENT_SECRET": "your_client_secret",
+        "REDDIT_USERNAME": "your_username",
+        "REDDIT_PASSWORD": "your_password",
+        "THREADS_ACCESS_TOKEN": "your_token",
+        "THREADS_USER_ID": "your_user_id",
+        "TIKTOK_ACCESS_TOKEN": "your_token"
       }
     }
   }
@@ -127,6 +137,25 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 |----------|-------------|
 | `LINKEDIN_ACCESS_TOKEN` | OAuth 2.0 access token from the [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps) — requires `r_liteprofile`, `w_member_social` scopes |
 
+### Reddit
+| Variable | Description |
+|----------|-------------|
+| `REDDIT_CLIENT_ID` | App client ID from [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps) (create a "script" type app) |
+| `REDDIT_CLIENT_SECRET` | App client secret |
+| `REDDIT_USERNAME` | Reddit account username |
+| `REDDIT_PASSWORD` | Reddit account password |
+
+### Threads
+| Variable | Description |
+|----------|-------------|
+| `THREADS_ACCESS_TOKEN` | OAuth 2.0 access token from the [Meta for Developers](https://developers.facebook.com) — requires `threads_basic`, `threads_content_publish` scopes |
+| `THREADS_USER_ID` | Your Threads user ID (returned from the Threads API `/me` endpoint) |
+
+### TikTok
+| Variable | Description |
+|----------|-------------|
+| `TIKTOK_ACCESS_TOKEN` | OAuth 2.0 access token from the [TikTok for Developers](https://developers.tiktok.com) — requires `user.info.basic`, `video.publish`, `video.upload` scopes |
+
 ## Available Tools
 
 ### Telegram
@@ -178,6 +207,32 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 - **SEARCH_LINKEDIN_PEOPLE** — Search for people by keywords (`keywords`, `count`)
 
 > **Note:** `SEARCH_LINKEDIN_PEOPLE` uses the LinkedIn People Search API which requires [Partner Program](https://learn.microsoft.com/en-us/linkedin/talent/recruiter-system-connect/getting-access) access. Most developer apps will receive a 403. All other tools work with a standard OAuth 2.0 token.
+
+### Reddit
+- **REDDIT_SUBMIT_POST** — Submit a text or link post to a subreddit (`subreddit`, `title`, `kind`, `text`, `url`)
+- **REDDIT_GET_POSTS** — Get posts from a subreddit (`subreddit`, `sort`, `limit`)
+- **REDDIT_COMMENT** — Comment on a post or reply to a comment (`parentId`, `text`)
+- **REDDIT_VOTE** — Upvote, downvote, or remove a vote (`id`, `direction`)
+- **REDDIT_SEARCH** — Search Reddit across all or a specific subreddit (`query`, `subreddit`, `sort`, `limit`)
+- **REDDIT_GET_USER_INFO** — Get public info about a Reddit user (`username`)
+
+> **Note:** Reddit requires a "script" type app in [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps). The password grant flow is used — 2FA must be disabled on the account.
+
+### Threads
+- **THREADS_GET_PROFILE** — Get your Threads profile information
+- **THREADS_CREATE_POST** — Create a new text post (`text`)
+- **THREADS_REPLY** — Reply to a Threads post (`replyToId`, `text`)
+- **THREADS_GET_POSTS** — Get recent posts from your account (`limit`)
+- **THREADS_DELETE_POST** — Delete a post by ID (`mediaId`)
+
+### TikTok
+- **TIKTOK_QUERY_CREATOR_INFO** — Query creator info including posting permissions and privacy options
+- **TIKTOK_GET_USER_INFO** — Get TikTok account profile and stats
+- **TIKTOK_DIRECT_POST_VIDEO** — Post a video by URL (`videoUrl`, `title`, `privacyLevel`, ...)
+- **TIKTOK_PHOTO_POST** — Create a photo/carousel post (`photoUrls`, `title`, `description`, `privacyLevel`)
+- **TIKTOK_GET_POST_STATUS** — Check the publishing status of a video or photo post (`publishId`)
+
+> **Note:** TikTok's Content Posting API requires app approval from [TikTok for Developers](https://developers.tiktok.com). Videos are pulled from a public URL by TikTok's servers rather than uploaded directly.
 
 ## Development
 

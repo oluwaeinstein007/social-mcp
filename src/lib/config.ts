@@ -23,4 +23,21 @@ export const config = {
 		baseUrl: "https://api.linkedin.com/v2",
 		accessToken: process.env.LINKEDIN_ACCESS_TOKEN || "",
 	},
+	reddit: {
+		baseUrl: "https://oauth.reddit.com",
+		clientId: process.env.REDDIT_CLIENT_ID || "",
+		clientSecret: process.env.REDDIT_CLIENT_SECRET || "",
+		username: process.env.REDDIT_USERNAME || "",
+		password: process.env.REDDIT_PASSWORD || "",
+		userAgent: "social-mcp/1.0 (by /u/social_mcp_bot)",
+	},
+	threads: {
+		baseUrl: "https://graph.threads.net/v1.0",
+		accessToken: process.env.THREADS_ACCESS_TOKEN || "",
+		userId: process.env.THREADS_USER_ID || "",
+	},
+	tiktok: {
+		baseUrl: "https://open.tiktokapis.com/v2",
+		accessToken: process.env.TIKTOK_ACCESS_TOKEN || "",
+	},
 };

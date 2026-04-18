@@ -6,8 +6,11 @@ import { getDiscordService } from "./services/discord-service.js";
 import { getFacebookService } from "./services/facebook-service.js";
 import { getInstagramService } from "./services/instagram-service.js";
 import { getLinkedInService } from "./services/linkedin-service.js";
+import { getRedditService } from "./services/reddit-service.js";
 import { getSlackService } from "./services/slack-service.js";
 import { getTelegramService } from "./services/telegram-service.js";
+import { getThreadsService } from "./services/threads-service.js";
+import { getTikTokService } from "./services/tiktok-service.js";
 import { getTwitterService } from "./services/twitter-service.js";
 import { getWhatsappService } from "./services/whatsapp-service.js";
 import { getMessagesTool as discordGetMessagesTool } from "./tools/discord-tools/get-messages.js";
@@ -23,6 +26,12 @@ import { getPostsTool as linkedInGetPostsTool } from "./tools/linkedin-tools/get
 import { getProfileTool as linkedInGetProfileTool } from "./tools/linkedin-tools/get-profile.js";
 import { likePostTool as linkedInLikePostTool } from "./tools/linkedin-tools/like-post.js";
 import { searchPeopleTool as linkedInSearchPeopleTool } from "./tools/linkedin-tools/search-people.js";
+import { commentTool as redditCommentTool } from "./tools/reddit-tools/comment.js";
+import { getUserInfoTool as redditGetUserInfoTool } from "./tools/reddit-tools/get-user-info.js";
+import { getPostsTool as redditGetPostsTool } from "./tools/reddit-tools/get-posts.js";
+import { searchTool as redditSearchTool } from "./tools/reddit-tools/search.js";
+import { submitPostTool as redditSubmitPostTool } from "./tools/reddit-tools/submit-post.js";
+import { voteTool as redditVoteTool } from "./tools/reddit-tools/vote.js";
 import { getMessagesTool as slackGetMessagesTool } from "./tools/slack-tools/get-messages.js";
 import { listChannelsTool as slackListChannelsTool } from "./tools/slack-tools/list-channels.js";
 import { sendMessageTool as slackSendMessageTool } from "./tools/slack-tools/send-message.js";
@@ -33,6 +42,16 @@ import { getChannelInfoTool } from "./tools/telegram-tools/get-channel-info.js";
 import { getChannelMembersTool } from "./tools/telegram-tools/get-channel-members.js";
 import { pinMessageTool } from "./tools/telegram-tools/pin-message.js";
 import { sendMessageTool } from "./tools/telegram-tools/send-message.js";
+import { createPostTool as threadsCreatePostTool } from "./tools/threads-tools/create-post.js";
+import { deletePostTool as threadsDeletePostTool } from "./tools/threads-tools/delete-post.js";
+import { getPostsTool as threadsGetPostsTool } from "./tools/threads-tools/get-posts.js";
+import { getProfileTool as threadsGetProfileTool } from "./tools/threads-tools/get-profile.js";
+import { replyTool as threadsReplyTool } from "./tools/threads-tools/reply.js";
+import { directPostVideoTool as tiktokDirectPostVideoTool } from "./tools/tiktok-tools/direct-post-video.js";
+import { getPostStatusTool as tiktokGetPostStatusTool } from "./tools/tiktok-tools/get-post-status.js";
+import { getUserInfoTool as tiktokGetUserInfoTool } from "./tools/tiktok-tools/get-user-info.js";
+import { photoPostTool as tiktokPhotoPostTool } from "./tools/tiktok-tools/photo-post.js";
+import { queryCreatorInfoTool as tiktokQueryCreatorInfoTool } from "./tools/tiktok-tools/query-creator-info.js";
 import { deleteTweetTool } from "./tools/twitter-tools/delete-tweet.js";
 import { getUserInfoTool } from "./tools/twitter-tools/get-user-info.js";
 import { likeTweetTool } from "./tools/twitter-tools/like-tweet.js";
@@ -71,6 +90,9 @@ async function main() {
 	checkPlatform("Instagram", getInstagramService);
 	checkPlatform("Slack", getSlackService);
 	checkPlatform("LinkedIn", getLinkedInService);
+	checkPlatform("Reddit", getRedditService);
+	checkPlatform("Threads", getThreadsService);
+	checkPlatform("TikTok", getTikTokService);
 	console.error("");
 
 	const server = new FastMCP({ name: "Social MCP Server", version });
@@ -120,6 +142,28 @@ async function main() {
 	server.addTool(linkedInLikePostTool);
 	server.addTool(linkedInAddCommentTool);
 	server.addTool(linkedInSearchPeopleTool);
+
+	// Reddit
+	server.addTool(redditSubmitPostTool);
+	server.addTool(redditGetPostsTool);
+	server.addTool(redditCommentTool);
+	server.addTool(redditVoteTool);
+	server.addTool(redditSearchTool);
+	server.addTool(redditGetUserInfoTool);
+
+	// Threads
+	server.addTool(threadsGetProfileTool);
+	server.addTool(threadsCreatePostTool);
+	server.addTool(threadsReplyTool);
+	server.addTool(threadsGetPostsTool);
+	server.addTool(threadsDeletePostTool);
+
+	// TikTok
+	server.addTool(tiktokQueryCreatorInfoTool);
+	server.addTool(tiktokGetUserInfoTool);
+	server.addTool(tiktokDirectPostVideoTool);
+	server.addTool(tiktokPhotoPostTool);
+	server.addTool(tiktokGetPostStatusTool);
 
 	try {
 		await server.start({ transportType: "stdio" });
