@@ -40,4 +40,8 @@ export const config = {
 		baseUrl: "https://open.tiktokapis.com/v2",
 		accessToken: process.env.TIKTOK_ACCESS_TOKEN || "",
 	},
+	youtube: {
+		baseUrl: "https://www.googleapis.com/youtube/v3",
+		accessToken: process.env.YOUTUBE_ACCESS_TOKEN || "",
+	},
 };

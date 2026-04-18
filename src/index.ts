@@ -13,6 +13,7 @@ import { getThreadsService } from "./services/threads-service.js";
 import { getTikTokService } from "./services/tiktok-service.js";
 import { getTwitterService } from "./services/twitter-service.js";
 import { getWhatsappService } from "./services/whatsapp-service.js";
+import { getYouTubeService } from "./services/youtube-service.js";
 import { getMessagesTool as discordGetMessagesTool } from "./tools/discord-tools/get-messages.js";
 import { sendMessageTool as discordSendMessageTool } from "./tools/discord-tools/send-message.js";
 import { createPostTool as facebookCreatePostTool } from "./tools/facebook-tools/create-post.js";
@@ -59,6 +60,13 @@ import { replyTweetTool } from "./tools/twitter-tools/reply-tweet.js";
 import { searchTweetsTool } from "./tools/twitter-tools/search-tweets.js";
 import { sendTweetTool } from "./tools/twitter-tools/send-tweet.js";
 import { sendMessageTool as whatsappSendMessageTool } from "./tools/whatsapp-tools/send-message.js";
+import { getChannelInfoTool as youtubeGetChannelInfoTool } from "./tools/youtube-tools/get-channel-info.js";
+import { getCommentsTool as youtubeGetCommentsTool } from "./tools/youtube-tools/get-comments.js";
+import { getVideoInfoTool as youtubeGetVideoInfoTool } from "./tools/youtube-tools/get-video-info.js";
+import { listChannelVideosTool as youtubeListChannelVideosTool } from "./tools/youtube-tools/list-channel-videos.js";
+import { postCommentTool as youtubePostCommentTool } from "./tools/youtube-tools/post-comment.js";
+import { searchVideosTool as youtubeSearchVideosTool } from "./tools/youtube-tools/search-videos.js";
+import { updateVideoTool as youtubeUpdateVideoTool } from "./tools/youtube-tools/update-video.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as {
@@ -93,6 +101,7 @@ async function main() {
 	checkPlatform("Reddit", getRedditService);
 	checkPlatform("Threads", getThreadsService);
 	checkPlatform("TikTok", getTikTokService);
+	checkPlatform("YouTube", getYouTubeService);
 	console.error("");
 
 	const server = new FastMCP({ name: "Social MCP Server", version });
@@ -164,6 +173,15 @@ async function main() {
 	server.addTool(tiktokDirectPostVideoTool);
 	server.addTool(tiktokPhotoPostTool);
 	server.addTool(tiktokGetPostStatusTool);
+
+	// YouTube
+	server.addTool(youtubeGetChannelInfoTool);
+	server.addTool(youtubeSearchVideosTool);
+	server.addTool(youtubeGetVideoInfoTool);
+	server.addTool(youtubeListChannelVideosTool);
+	server.addTool(youtubeGetCommentsTool);
+	server.addTool(youtubePostCommentTool);
+	server.addTool(youtubeUpdateVideoTool);
 
 	try {
 		await server.start({ transportType: "stdio" });
