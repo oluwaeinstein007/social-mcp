@@ -1,5 +1,11 @@
 # social-mcp
 
+## 1.6.1
+
+### Patch Changes
+
+- doc update for youtube tool
+
 ## 1.6.0
 
 ### Minor Changes

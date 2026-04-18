@@ -17,6 +17,7 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | Reddit    | Submit post, get posts, comment, vote, search, get user info |
 | Threads   | Get profile, create post, reply, get posts, delete post |
 | TikTok    | Query creator info, get user info, post video, photo post, get post status |
+| YouTube   | Get channel info, search videos, get video info, list channel videos, get comments, post comment, update video |
 
 ## Quick Start
 
@@ -64,7 +65,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "REDDIT_PASSWORD": "your_password",
         "THREADS_ACCESS_TOKEN": "your_token",
         "THREADS_USER_ID": "your_user_id",
-        "TIKTOK_ACCESS_TOKEN": "your_token"
+        "TIKTOK_ACCESS_TOKEN": "your_token",
+        "YOUTUBE_ACCESS_TOKEN": "your_token"
       }
     }
   }
@@ -156,6 +158,11 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 |----------|-------------|
 | `TIKTOK_ACCESS_TOKEN` | OAuth 2.0 access token from the [TikTok for Developers](https://developers.tiktok.com) — requires `user.info.basic`, `video.publish`, `video.upload` scopes |
 
+### YouTube
+| Variable | Description |
+|----------|-------------|
+| `YOUTUBE_ACCESS_TOKEN` | OAuth 2.0 access token from the [Google Cloud Console](https://console.cloud.google.com) — requires `https://www.googleapis.com/auth/youtube` scope |
+
 ## Available Tools
 
 ### Telegram
@@ -233,6 +240,17 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 - **TIKTOK_GET_POST_STATUS** — Check the publishing status of a video or photo post (`publishId`)
 
 > **Note:** TikTok's Content Posting API requires app approval from [TikTok for Developers](https://developers.tiktok.com). Videos are pulled from a public URL by TikTok's servers rather than uploaded directly.
+
+### YouTube
+- **YOUTUBE_GET_CHANNEL_INFO** — Get channel info and stats (`channelId` optional — omit for your own channel)
+- **YOUTUBE_SEARCH_VIDEOS** — Search YouTube for videos (`query`, `maxResults`, `pageToken`)
+- **YOUTUBE_GET_VIDEO_INFO** — Get detailed info and stats for a video (`videoId`)
+- **YOUTUBE_LIST_CHANNEL_VIDEOS** — List recent uploads from a channel (`channelId`, `maxResults`, `pageToken`)
+- **YOUTUBE_GET_COMMENTS** — Get top-level comments on a video (`videoId`, `maxResults`)
+- **YOUTUBE_POST_COMMENT** — Post a comment on a video (`videoId`, `text`)
+- **YOUTUBE_UPDATE_VIDEO** — Update a video's title, description, and tags (`videoId`, `title`, `description`, `tags`, `categoryId`)
+
+> **Note:** YouTube requires an OAuth 2.0 access token with the `https://www.googleapis.com/auth/youtube` scope. Enable the **YouTube Data API v3** in your [Google Cloud Console](https://console.cloud.google.com) project. Video uploads are not supported via this API — use the YouTube Studio or resumable upload flow directly.
 
 ## Development
 
