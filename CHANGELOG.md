@@ -1,5 +1,11 @@
 # social-mcp
 
+## 1.6.0
+
+### Minor Changes
+
+- added youtube tool
+
 ## 1.5.0
 
 ### Minor Changes
