@@ -1,5 +1,11 @@
 # social-mcp
 
+## 1.7.1
+
+### Patch Changes
+
+- added sponsor
+
 ## 1.7.0
 
 ### Minor Changes

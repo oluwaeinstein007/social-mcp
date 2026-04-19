@@ -335,6 +335,13 @@ For a clean rebuild:
 pnpm run clean && pnpm run build
 ```
 
+## Support
+
+If you find this project useful, consider supporting its development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-%23EA4AAA?logo=github)](https://github.com/sponsors/oluwaeinstein007)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-lanrecodes-%23FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/lanrecodes)
+
 ## License
 
-ISC
+MIT
