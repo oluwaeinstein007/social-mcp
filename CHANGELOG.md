@@ -1,5 +1,11 @@
 # social-mcp
 
+## 1.7.0
+
+### Minor Changes
+
+- added bluesky and mastodon
+
 ## 1.6.1
 
 ### Patch Changes
