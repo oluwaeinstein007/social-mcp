@@ -17,7 +17,8 @@ export class WhatsappService {
 	constructor() {
 		const missing: string[] = [];
 		if (!config.whatsapp.accessToken) missing.push("WHATSAPP_ACCESS_TOKEN");
-		if (!config.whatsapp.phoneNumberId) missing.push("WHATSAPP_PHONE_NUMBER_ID");
+		if (!config.whatsapp.phoneNumberId)
+			missing.push("WHATSAPP_PHONE_NUMBER_ID");
 		if (missing.length > 0) {
 			throw new CredentialsError("WhatsApp", missing);
 		}

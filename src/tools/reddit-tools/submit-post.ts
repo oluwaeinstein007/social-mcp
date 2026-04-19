@@ -3,9 +3,15 @@ import { CredentialsError } from "../../lib/errors.js";
 import { getRedditService } from "../../services/reddit-service.js";
 
 const submitPostParams = z.object({
-	subreddit: z.string().min(1).describe("The subreddit to post to (without r/ prefix)"),
+	subreddit: z
+		.string()
+		.min(1)
+		.describe("The subreddit to post to (without r/ prefix)"),
 	title: z.string().min(1).max(300).describe("Title of the post"),
-	kind: z.enum(["self", "link"]).default("self").describe("Post type: 'self' for text post, 'link' for link post"),
+	kind: z
+		.enum(["self", "link"])
+		.default("self")
+		.describe("Post type: 'self' for text post, 'link' for link post"),
 	text: z.string().optional().describe("Text content for self posts"),
 	url: z.string().url().optional().describe("URL for link posts"),
 });

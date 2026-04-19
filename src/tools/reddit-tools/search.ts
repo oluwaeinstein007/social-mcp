@@ -7,19 +7,28 @@ const searchParams = z.object({
 	subreddit: z
 		.string()
 		.optional()
-		.describe("Limit search to a specific subreddit (without r/ prefix). Omit to search all of Reddit"),
+		.describe(
+			"Limit search to a specific subreddit (without r/ prefix). Omit to search all of Reddit",
+		),
 	sort: z
 		.enum(["relevance", "new", "top"])
 		.default("relevance")
 		.describe("Sort order for search results"),
-	limit: z.number().int().min(1).max(100).default(10).describe("Number of results to return"),
+	limit: z
+		.number()
+		.int()
+		.min(1)
+		.max(100)
+		.default(10)
+		.describe("Number of results to return"),
 });
 
 type SearchParams = z.infer<typeof searchParams>;
 
 export const searchTool = {
 	name: "REDDIT_SEARCH",
-	description: "Search Reddit posts across all subreddits or within a specific subreddit",
+	description:
+		"Search Reddit posts across all subreddits or within a specific subreddit",
 	parameters: searchParams,
 	execute: async (params: SearchParams) => {
 		try {

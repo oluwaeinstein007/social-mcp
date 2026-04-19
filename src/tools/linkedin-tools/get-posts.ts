@@ -35,8 +35,8 @@ export const getPostsTool = {
 			}
 			const lines = result.elements.map((el, i) => {
 				const text =
-					el.specificContent?.["com.linkedin.ugc.ShareContent"]
-						?.shareCommentary?.text ?? "(no text)";
+					el.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareCommentary
+						?.text ?? "(no text)";
 				const ts = el.created?.time
 					? new Date(el.created.time).toISOString()
 					: "unknown time";

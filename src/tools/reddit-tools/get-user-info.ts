@@ -16,7 +16,9 @@ export const getUserInfoTool = {
 		try {
 			const result = await getRedditService().getUserInfo(params.username);
 			const d = result.data;
-			const created = d.created_utc ? new Date(d.created_utc * 1000).toISOString() : "unknown";
+			const created = d.created_utc
+				? new Date(d.created_utc * 1000).toISOString()
+				: "unknown";
 			return [
 				`Reddit user: u/${d.name}`,
 				`ID: ${d.id}`,

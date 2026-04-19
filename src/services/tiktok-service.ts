@@ -69,7 +69,11 @@ const tiktokStatusSchema = z.object({
 		fail_reason: z.string().optional(),
 	}),
 	error: z
-		.object({ code: z.string(), message: z.string(), log_id: z.string().optional() })
+		.object({
+			code: z.string(),
+			message: z.string(),
+			log_id: z.string().optional(),
+		})
 		.optional(),
 });
 

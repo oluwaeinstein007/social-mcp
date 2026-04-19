@@ -16,11 +16,15 @@ type CommentParams = z.infer<typeof commentParams>;
 
 export const commentTool = {
 	name: "REDDIT_COMMENT",
-	description: "Post a comment on a Reddit post or reply to an existing comment",
+	description:
+		"Post a comment on a Reddit post or reply to an existing comment",
 	parameters: commentParams,
 	execute: async (params: CommentParams) => {
 		try {
-			const result = await getRedditService().comment(params.parentId, params.text);
+			const result = await getRedditService().comment(
+				params.parentId,
+				params.text,
+			);
 			if (result.json.errors.length > 0) {
 				return `Reddit comment errors: ${JSON.stringify(result.json.errors)}`;
 			}

@@ -3,7 +3,11 @@ import { CredentialsError } from "../../lib/errors.js";
 import { getThreadsService } from "../../services/threads-service.js";
 
 const createPostParams = z.object({
-	text: z.string().min(1).max(500).describe("The text content of the Threads post"),
+	text: z
+		.string()
+		.min(1)
+		.max(500)
+		.describe("The text content of the Threads post"),
 });
 
 type CreatePostParams = z.infer<typeof createPostParams>;

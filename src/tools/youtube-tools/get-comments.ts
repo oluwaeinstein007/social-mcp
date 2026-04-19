@@ -4,7 +4,13 @@ import { getYouTubeService } from "../../services/youtube-service.js";
 
 const params = z.object({
 	videoId: z.string().describe("YouTube video ID"),
-	maxResults: z.number().int().min(1).max(100).default(20).describe("Number of comments to return (1-100)"),
+	maxResults: z
+		.number()
+		.int()
+		.min(1)
+		.max(100)
+		.default(20)
+		.describe("Number of comments to return (1-100)"),
 });
 
 type Params = z.infer<typeof params>;
@@ -15,7 +21,10 @@ export const getCommentsTool = {
 	parameters: params,
 	execute: async (p: Params) => {
 		try {
-			const result = await getYouTubeService().getComments(p.videoId, p.maxResults);
+			const result = await getYouTubeService().getComments(
+				p.videoId,
+				p.maxResults,
+			);
 			const items = result.items;
 			if (!items?.length) return "No comments found for this video.";
 			const lines = items.map((item, i) => {

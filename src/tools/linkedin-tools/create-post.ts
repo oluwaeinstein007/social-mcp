@@ -20,7 +20,8 @@ type CreatePostParams = z.infer<typeof createPostParams>;
 
 export const createPostTool = {
 	name: "CREATE_LINKEDIN_POST",
-	description: "Create a LinkedIn UGC post on behalf of a member or organization",
+	description:
+		"Create a LinkedIn UGC post on behalf of a member or organization",
 	parameters: createPostParams,
 	execute: async (params: CreatePostParams) => {
 		try {

@@ -207,7 +207,11 @@ export class YouTubeService {
 		);
 	}
 
-	async listChannelVideos(channelId: string, maxResults = 10, pageToken?: string) {
+	async listChannelVideos(
+		channelId: string,
+		maxResults = 10,
+		pageToken?: string,
+	) {
 		const params = new URLSearchParams({
 			part: "snippet",
 			channelId,

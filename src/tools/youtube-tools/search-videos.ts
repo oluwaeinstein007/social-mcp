@@ -4,7 +4,13 @@ import { getYouTubeService } from "../../services/youtube-service.js";
 
 const params = z.object({
 	query: z.string().min(1).describe("Search query"),
-	maxResults: z.number().int().min(1).max(50).default(10).describe("Number of results to return (1-50)"),
+	maxResults: z
+		.number()
+		.int()
+		.min(1)
+		.max(50)
+		.default(10)
+		.describe("Number of results to return (1-50)"),
 	pageToken: z.string().optional().describe("Page token for pagination"),
 });
 
@@ -16,19 +22,32 @@ export const searchVideosTool = {
 	parameters: params,
 	execute: async (p: Params) => {
 		try {
-			const result = await getYouTubeService().searchVideos(p.query, p.maxResults, p.pageToken);
+			const result = await getYouTubeService().searchVideos(
+				p.query,
+				p.maxResults,
+				p.pageToken,
+			);
 			const items = result.items;
 			if (!items?.length) return "No videos found for that query.";
 			const lines = items.map((item, i) => {
 				const title = item.snippet?.title ?? "Untitled";
 				const channel = item.snippet?.channelTitle ?? "Unknown";
 				const videoId = item.id?.videoId;
-				const url = videoId ? `https://www.youtube.com/watch?v=${videoId}` : "N/A";
+				const url = videoId
+					? `https://www.youtube.com/watch?v=${videoId}`
+					: "N/A";
 				return `${i + 1}. ${title}\n   Channel: ${channel}\n   URL: ${url}`;
 			});
 			const total = result.pageInfo?.totalResults;
-			const next = result.nextPageToken ? `\nNext page token: ${result.nextPageToken}` : "";
-			return [`Search results for "${p.query}"${total ? ` (${total} total)` : ""}:`, "", ...lines, next]
+			const next = result.nextPageToken
+				? `\nNext page token: ${result.nextPageToken}`
+				: "";
+			return [
+				`Search results for "${p.query}"${total ? ` (${total} total)` : ""}:`,
+				"",
+				...lines,
+				next,
+			]
 				.join("\n")
 				.trim();
 		} catch (error) {

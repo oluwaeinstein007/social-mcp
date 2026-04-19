@@ -3,22 +3,42 @@ import { CredentialsError } from "../../lib/errors.js";
 import { getTikTokService } from "../../services/tiktok-service.js";
 
 const directPostVideoParams = z.object({
-	videoUrl: z.string().url().describe("Public URL of the video to post (must be accessible by TikTok servers)"),
+	videoUrl: z
+		.string()
+		.url()
+		.describe(
+			"Public URL of the video to post (must be accessible by TikTok servers)",
+		),
 	title: z.string().min(1).max(150).describe("Video title/caption"),
 	privacyLevel: z
-		.enum(["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"])
+		.enum([
+			"PUBLIC_TO_EVERYONE",
+			"MUTUAL_FOLLOW_FRIENDS",
+			"FOLLOWER_OF_CREATOR",
+			"SELF_ONLY",
+		])
 		.default("PUBLIC_TO_EVERYONE")
 		.describe("Who can view the video"),
-	disableDuet: z.boolean().default(false).describe("Disable duet for this video"),
-	disableComment: z.boolean().default(false).describe("Disable comments for this video"),
-	disableStitch: z.boolean().default(false).describe("Disable stitch for this video"),
+	disableDuet: z
+		.boolean()
+		.default(false)
+		.describe("Disable duet for this video"),
+	disableComment: z
+		.boolean()
+		.default(false)
+		.describe("Disable comments for this video"),
+	disableStitch: z
+		.boolean()
+		.default(false)
+		.describe("Disable stitch for this video"),
 });
 
 type DirectPostVideoParams = z.infer<typeof directPostVideoParams>;
 
 export const directPostVideoTool = {
 	name: "TIKTOK_DIRECT_POST_VIDEO",
-	description: "Post a video to TikTok by providing a public URL (TikTok pulls the video from the URL)",
+	description:
+		"Post a video to TikTok by providing a public URL (TikTok pulls the video from the URL)",
 	parameters: directPostVideoParams,
 	execute: async (params: DirectPostVideoParams) => {
 		try {

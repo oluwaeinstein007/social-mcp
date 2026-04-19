@@ -7,14 +7,18 @@ const params = z.object({
 	title: z.string().min(1).max(100).describe("New video title"),
 	description: z.string().max(5000).describe("New video description"),
 	tags: z.array(z.string()).optional().describe("List of tags for the video"),
-	categoryId: z.string().default("22").describe("YouTube category ID (default: 22 = People & Blogs)"),
+	categoryId: z
+		.string()
+		.default("22")
+		.describe("YouTube category ID (default: 22 = People & Blogs)"),
 });
 
 type Params = z.infer<typeof params>;
 
 export const updateVideoTool = {
 	name: "YOUTUBE_UPDATE_VIDEO",
-	description: "Update the title, description, and tags of a YouTube video you own",
+	description:
+		"Update the title, description, and tags of a YouTube video you own",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {

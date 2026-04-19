@@ -34,7 +34,9 @@ const threadsPostsSchema = z.object({
 	),
 	paging: z
 		.object({
-			cursors: z.object({ before: z.string().optional(), after: z.string().optional() }).optional(),
+			cursors: z
+				.object({ before: z.string().optional(), after: z.string().optional() })
+				.optional(),
 		})
 		.optional(),
 });
@@ -45,7 +47,10 @@ export class ThreadsService {
 
 	constructor() {
 		if (!config.threads.accessToken || !config.threads.userId) {
-			throw new CredentialsError("Threads", ["THREADS_ACCESS_TOKEN", "THREADS_USER_ID"]);
+			throw new CredentialsError("Threads", [
+				"THREADS_ACCESS_TOKEN",
+				"THREADS_USER_ID",
+			]);
 		}
 		this.headers = {
 			"Content-Type": "application/json",
@@ -54,7 +59,8 @@ export class ThreadsService {
 	}
 
 	async getProfile() {
-		const fields = "id,username,name,biography,followers_count,profile_picture_url";
+		const fields =
+			"id,username,name,biography,followers_count,profile_picture_url";
 		return fetchJson(
 			`${this.baseUrl}/me?fields=${fields}&access_token=${config.threads.accessToken}`,
 			{ method: "GET", headers: this.headers },
@@ -91,7 +97,8 @@ export class ThreadsService {
 	}
 
 	async getPosts(limit = 10) {
-		const fields = "id,text,media_type,timestamp,permalink,like_count,replies_count";
+		const fields =
+			"id,text,media_type,timestamp,permalink,like_count,replies_count";
 		return fetchJson(
 			`${this.baseUrl}/${config.threads.userId}/threads?fields=${fields}&limit=${limit}&access_token=${config.threads.accessToken}`,
 			{ method: "GET", headers: this.headers },
@@ -105,7 +112,9 @@ export class ThreadsService {
 			{ method: "DELETE", headers: this.headers },
 		);
 		if (!response.ok) {
-			throw new Error(`Threads API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Threads API error ${response.status}: ${await response.text()}`,
+			);
 		}
 	}
 }

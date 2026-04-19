@@ -3,14 +3,20 @@ import { CredentialsError } from "../../lib/errors.js";
 import { getYouTubeService } from "../../services/youtube-service.js";
 
 const params = z.object({
-	channelId: z.string().optional().describe("Channel ID to look up. Omit to get the authenticated user's own channel."),
+	channelId: z
+		.string()
+		.optional()
+		.describe(
+			"Channel ID to look up. Omit to get the authenticated user's own channel.",
+		),
 });
 
 type Params = z.infer<typeof params>;
 
 export const getChannelInfoTool = {
 	name: "YOUTUBE_GET_CHANNEL_INFO",
-	description: "Get YouTube channel information including subscriber count, view count, and video count",
+	description:
+		"Get YouTube channel information including subscriber count, view count, and video count",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {

@@ -103,7 +103,9 @@ export class RedditService {
 			}),
 		});
 		if (!response.ok) {
-			throw new Error(`Reddit auth failed: ${response.status} ${await response.text()}`);
+			throw new Error(
+				`Reddit auth failed: ${response.status} ${await response.text()}`,
+			);
 		}
 		const data = redditTokenSchema.parse(await response.json());
 		this._accessToken = data.access_token;
@@ -136,19 +138,27 @@ export class RedditService {
 			body,
 		});
 		if (!response.ok) {
-			throw new Error(`Reddit API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
 		}
 		return redditPostSchema.parse(await response.json());
 	}
 
-	async getPosts(subreddit: string, sort: "hot" | "new" | "top" | "rising" = "hot", limit = 10) {
+	async getPosts(
+		subreddit: string,
+		sort: "hot" | "new" | "top" | "rising" = "hot",
+		limit = 10,
+	) {
 		const headers = await this.headers();
 		const response = await fetch(
 			`${this.baseUrl}/r/${subreddit}/${sort}?limit=${limit}`,
 			{ method: "GET", headers },
 		);
 		if (!response.ok) {
-			throw new Error(`Reddit API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
 		}
 		return redditListingSchema.parse(await response.json());
 	}
@@ -162,7 +172,9 @@ export class RedditService {
 			body,
 		});
 		if (!response.ok) {
-			throw new Error(`Reddit API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
 		}
 		return redditPostSchema.parse(await response.json());
 	}
@@ -176,19 +188,32 @@ export class RedditService {
 			body,
 		});
 		if (!response.ok) {
-			throw new Error(`Reddit API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
 		}
 	}
 
-	async search(query: string, subreddit?: string, sort: "relevance" | "new" | "top" = "relevance", limit = 10) {
+	async search(
+		query: string,
+		subreddit?: string,
+		sort: "relevance" | "new" | "top" = "relevance",
+		limit = 10,
+	) {
 		const headers = await this.headers();
-		const params = new URLSearchParams({ q: query, sort, limit: String(limit) });
+		const params = new URLSearchParams({
+			q: query,
+			sort,
+			limit: String(limit),
+		});
 		const base = subreddit
 			? `${this.baseUrl}/r/${subreddit}/search?${params}&restrict_sr=1`
 			: `${this.baseUrl}/search?${params}`;
 		const response = await fetch(base, { method: "GET", headers });
 		if (!response.ok) {
-			throw new Error(`Reddit API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
 		}
 		return redditListingSchema.parse(await response.json());
 	}
@@ -200,7 +225,9 @@ export class RedditService {
 			headers,
 		});
 		if (!response.ok) {
-			throw new Error(`Reddit API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
 		}
 		return redditUserSchema.parse(await response.json());
 	}

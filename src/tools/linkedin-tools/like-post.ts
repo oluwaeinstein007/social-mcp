@@ -6,7 +6,9 @@ const likePostParams = z.object({
 	actorUrn: z
 		.string()
 		.min(1)
-		.describe("The URN of the person liking the post, e.g. urn:li:person:ABC123"),
+		.describe(
+			"The URN of the person liking the post, e.g. urn:li:person:ABC123",
+		),
 	ugcPostUrn: z
 		.string()
 		.min(1)

@@ -158,7 +158,9 @@ export class LinkedInService {
 			headers: this.headers,
 		});
 		if (!response.ok) {
-			throw new Error(`LinkedIn API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`LinkedIn API error ${response.status}: ${await response.text()}`,
+			);
 		}
 	}
 

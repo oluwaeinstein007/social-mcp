@@ -44,4 +44,13 @@ export const config = {
 		baseUrl: "https://www.googleapis.com/youtube/v3",
 		accessToken: process.env.YOUTUBE_ACCESS_TOKEN || "",
 	},
+	bluesky: {
+		service: process.env.BLUESKY_SERVICE || "https://bsky.social",
+		identifier: process.env.BLUESKY_IDENTIFIER || "",
+		appPassword: process.env.BLUESKY_APP_PASSWORD || "",
+	},
+	mastodon: {
+		instanceUrl: process.env.MASTODON_INSTANCE_URL || "https://mastodon.social",
+		accessToken: process.env.MASTODON_ACCESS_TOKEN || "",
+	},
 };

@@ -3,7 +3,10 @@ import { CredentialsError } from "../../lib/errors.js";
 import { getLinkedInService } from "../../services/linkedin-service.js";
 
 const searchPeopleParams = z.object({
-	keywords: z.string().min(1).describe("Keywords to search for people on LinkedIn"),
+	keywords: z
+		.string()
+		.min(1)
+		.describe("Keywords to search for people on LinkedIn"),
 	count: z
 		.number()
 		.int()

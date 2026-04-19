@@ -6,7 +6,9 @@ const voteParams = z.object({
 	id: z
 		.string()
 		.min(1)
-		.describe("The fullname of the post or comment to vote on (e.g. t3_abc123 or t1_def456)"),
+		.describe(
+			"The fullname of the post or comment to vote on (e.g. t3_abc123 or t1_def456)",
+		),
 	direction: z
 		.enum(["upvote", "downvote", "remove"])
 		.describe("Vote direction: upvote, downvote, or remove existing vote"),

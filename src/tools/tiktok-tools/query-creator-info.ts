@@ -4,7 +4,8 @@ import { getTikTokService } from "../../services/tiktok-service.js";
 
 export const queryCreatorInfoTool = {
 	name: "TIKTOK_QUERY_CREATOR_INFO",
-	description: "Query TikTok creator info including posting permissions, privacy options, and video duration limits",
+	description:
+		"Query TikTok creator info including posting permissions, privacy options, and video duration limits",
 	parameters: z.object({}),
 	execute: async () => {
 		try {

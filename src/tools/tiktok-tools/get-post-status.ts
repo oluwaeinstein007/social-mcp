@@ -3,14 +3,18 @@ import { CredentialsError } from "../../lib/errors.js";
 import { getTikTokService } from "../../services/tiktok-service.js";
 
 const getPostStatusParams = z.object({
-	publishId: z.string().min(1).describe("The publish ID returned when initiating a video or photo post"),
+	publishId: z
+		.string()
+		.min(1)
+		.describe("The publish ID returned when initiating a video or photo post"),
 });
 
 type GetPostStatusParams = z.infer<typeof getPostStatusParams>;
 
 export const getPostStatusTool = {
 	name: "TIKTOK_GET_POST_STATUS",
-	description: "Check the publishing status of a TikTok video or photo post using its publish ID",
+	description:
+		"Check the publishing status of a TikTok video or photo post using its publish ID",
 	parameters: getPostStatusParams,
 	execute: async (params: GetPostStatusParams) => {
 		try {

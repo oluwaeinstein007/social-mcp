@@ -14,6 +14,8 @@ import { getTikTokService } from "./services/tiktok-service.js";
 import { getTwitterService } from "./services/twitter-service.js";
 import { getWhatsappService } from "./services/whatsapp-service.js";
 import { getYouTubeService } from "./services/youtube-service.js";
+import { getBlueskyService } from "./services/bluesky-service.js";
+import { getMastodonService } from "./services/mastodon-service.js";
 import { getMessagesTool as discordGetMessagesTool } from "./tools/discord-tools/get-messages.js";
 import { sendMessageTool as discordSendMessageTool } from "./tools/discord-tools/send-message.js";
 import { createPostTool as facebookCreatePostTool } from "./tools/facebook-tools/create-post.js";
@@ -67,6 +69,19 @@ import { listChannelVideosTool as youtubeListChannelVideosTool } from "./tools/y
 import { postCommentTool as youtubePostCommentTool } from "./tools/youtube-tools/post-comment.js";
 import { searchVideosTool as youtubeSearchVideosTool } from "./tools/youtube-tools/search-videos.js";
 import { updateVideoTool as youtubeUpdateVideoTool } from "./tools/youtube-tools/update-video.js";
+import { createPostTool as blueskyCreatePostTool } from "./tools/bluesky-tools/create-post.js";
+import { deletePostTool as blueskyDeletePostTool } from "./tools/bluesky-tools/delete-post.js";
+import { getProfileTool as blueskyGetProfileTool } from "./tools/bluesky-tools/get-profile.js";
+import { likePostTool as blueskyLikePostTool } from "./tools/bluesky-tools/like-post.js";
+import { replyToPostTool as blueskyReplyToPostTool } from "./tools/bluesky-tools/reply-to-post.js";
+import { searchPostsTool as blueskySearchPostsTool } from "./tools/bluesky-tools/search-posts.js";
+import { boostPostTool as mastodonBoostPostTool } from "./tools/mastodon-tools/boost-post.js";
+import { createPostTool as mastodonCreatePostTool } from "./tools/mastodon-tools/create-post.js";
+import { deletePostTool as mastodonDeletePostTool } from "./tools/mastodon-tools/delete-post.js";
+import { favouritePostTool as mastodonFavouritePostTool } from "./tools/mastodon-tools/favourite-post.js";
+import { getProfileTool as mastodonGetProfileTool } from "./tools/mastodon-tools/get-profile.js";
+import { replyToPostTool as mastodonReplyToPostTool } from "./tools/mastodon-tools/reply-to-post.js";
+import { searchPostsTool as mastodonSearchPostsTool } from "./tools/mastodon-tools/search-posts.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as {
@@ -102,6 +117,8 @@ async function main() {
 	checkPlatform("Threads", getThreadsService);
 	checkPlatform("TikTok", getTikTokService);
 	checkPlatform("YouTube", getYouTubeService);
+	checkPlatform("Bluesky", getBlueskyService);
+	checkPlatform("Mastodon", getMastodonService);
 	console.error("");
 
 	const server = new FastMCP({ name: "Social MCP Server", version });
@@ -182,6 +199,23 @@ async function main() {
 	server.addTool(youtubeGetCommentsTool);
 	server.addTool(youtubePostCommentTool);
 	server.addTool(youtubeUpdateVideoTool);
+
+	// Bluesky
+	server.addTool(blueskyCreatePostTool);
+	server.addTool(blueskyReplyToPostTool);
+	server.addTool(blueskyDeletePostTool);
+	server.addTool(blueskyLikePostTool);
+	server.addTool(blueskyGetProfileTool);
+	server.addTool(blueskySearchPostsTool);
+
+	// Mastodon
+	server.addTool(mastodonCreatePostTool);
+	server.addTool(mastodonReplyToPostTool);
+	server.addTool(mastodonDeletePostTool);
+	server.addTool(mastodonBoostPostTool);
+	server.addTool(mastodonFavouritePostTool);
+	server.addTool(mastodonGetProfileTool);
+	server.addTool(mastodonSearchPostsTool);
 
 	try {
 		await server.start({ transportType: "stdio" });

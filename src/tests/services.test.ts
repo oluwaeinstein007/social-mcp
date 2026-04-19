@@ -56,9 +56,7 @@ describe("TelegramService credential validation", () => {
 
 	it("throws CredentialsError when token is missing", async () => {
 		delete process.env.TELEGRAM_BOT_TOKEN;
-		const { TelegramService } = await import(
-			"../services/telegram-service.js"
-		);
+		const { TelegramService } = await import("../services/telegram-service.js");
 		expect(() => new TelegramService()).toThrow(CredentialsError);
 	});
 });
@@ -92,17 +90,13 @@ describe("LinkedInService credential validation", () => {
 
 	it("throws CredentialsError when token is missing", async () => {
 		delete process.env.LINKEDIN_ACCESS_TOKEN;
-		const { LinkedInService } = await import(
-			"../services/linkedin-service.js"
-		);
+		const { LinkedInService } = await import("../services/linkedin-service.js");
 		expect(() => new LinkedInService()).toThrow(CredentialsError);
 	});
 
 	it("CredentialsError message lists missing var", async () => {
 		delete process.env.LINKEDIN_ACCESS_TOKEN;
-		const { LinkedInService } = await import(
-			"../services/linkedin-service.js"
-		);
+		const { LinkedInService } = await import("../services/linkedin-service.js");
 		let msg = "";
 		try {
 			new LinkedInService();

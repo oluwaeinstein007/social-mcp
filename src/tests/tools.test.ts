@@ -59,9 +59,7 @@ describe("SEND_TWEET param schema", () => {
 	});
 
 	it("rejects text over 280 chars", () => {
-		expect(() =>
-			sendTweetParams.parse({ text: "a".repeat(281) }),
-		).toThrow();
+		expect(() => sendTweetParams.parse({ text: "a".repeat(281) })).toThrow();
 	});
 });
 
@@ -229,8 +227,6 @@ describe("DELETE_LINKEDIN_POST param schema", () => {
 	});
 
 	it("rejects empty URN", () => {
-		expect(() =>
-			linkedInDeletePostParams.parse({ ugcPostUrn: "" }),
-		).toThrow();
+		expect(() => linkedInDeletePostParams.parse({ ugcPostUrn: "" })).toThrow();
 	});
 });

@@ -4,7 +4,8 @@ import { getTikTokService } from "../../services/tiktok-service.js";
 
 export const getUserInfoTool = {
 	name: "TIKTOK_GET_USER_INFO",
-	description: "Get TikTok account profile information including follower count and engagement stats",
+	description:
+		"Get TikTok account profile information including follower count and engagement stats",
 	parameters: z.object({}),
 	execute: async () => {
 		try {
@@ -17,9 +18,15 @@ export const getUserInfoTool = {
 				`TikTok User Info:`,
 				u.display_name ? `Name: ${u.display_name}` : null,
 				u.bio_description ? `Bio: ${u.bio_description}` : null,
-				u.is_verified !== undefined ? `Verified: ${u.is_verified ? "Yes" : "No"}` : null,
-				u.follower_count !== undefined ? `Followers: ${u.follower_count}` : null,
-				u.following_count !== undefined ? `Following: ${u.following_count}` : null,
+				u.is_verified !== undefined
+					? `Verified: ${u.is_verified ? "Yes" : "No"}`
+					: null,
+				u.follower_count !== undefined
+					? `Followers: ${u.follower_count}`
+					: null,
+				u.following_count !== undefined
+					? `Following: ${u.following_count}`
+					: null,
 				u.likes_count !== undefined ? `Total likes: ${u.likes_count}` : null,
 				u.video_count !== undefined ? `Videos: ${u.video_count}` : null,
 				u.profile_deep_link ? `Profile: ${u.profile_deep_link}` : null,

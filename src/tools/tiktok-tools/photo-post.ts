@@ -9,9 +9,18 @@ const photoPostParams = z.object({
 		.max(35)
 		.describe("Array of public photo URLs (up to 35 images)"),
 	title: z.string().min(1).max(90).describe("Photo post title"),
-	description: z.string().max(2200).default("").describe("Caption/description for the photo post"),
+	description: z
+		.string()
+		.max(2200)
+		.default("")
+		.describe("Caption/description for the photo post"),
 	privacyLevel: z
-		.enum(["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"])
+		.enum([
+			"PUBLIC_TO_EVERYONE",
+			"MUTUAL_FOLLOW_FRIENDS",
+			"FOLLOWER_OF_CREATOR",
+			"SELF_ONLY",
+		])
 		.default("PUBLIC_TO_EVERYONE")
 		.describe("Who can view the photo post"),
 });
