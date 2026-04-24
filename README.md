@@ -20,6 +20,8 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | Mastodon  | Get profile, create post, reply, search posts, boost post, favourite post, delete post                                 |
 | TikTok    | Query creator info, get user info, post video, photo post, get post status                                             |
 | YouTube   | Get channel info, search videos, get video info, list channel videos, get comments, post comment, update video         |
+| Pinterest | Get boards, create board, create pin, get pin, get board pins, delete pin                                              |
+| Email     | Send email, send bulk email (drivers: SMTP, SendGrid, Mailgun)                                                         |
 
 ## Quick Start
 
@@ -72,7 +74,16 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "MASTODON_ACCESS_TOKEN": "your_token",
         "MASTODON_INSTANCE_URL": "https://mastodon.social",
         "TIKTOK_ACCESS_TOKEN": "your_token",
-        "YOUTUBE_ACCESS_TOKEN": "your_token"
+        "YOUTUBE_ACCESS_TOKEN": "your_token",
+        "PINTEREST_ACCESS_TOKEN": "your_token",
+        "MAIL_MAILER": "smtp",
+        "MAIL_FROM_ADDRESS": "you@example.com",
+        "MAIL_FROM_NAME": "Your Name",
+        "MAIL_HOST": "smtp.gmail.com",
+        "MAIL_PORT": "587",
+        "MAIL_USERNAME": "you@gmail.com",
+        "MAIL_PASSWORD": "your_password",
+        "MAIL_ENCRYPTION": "tls"
       }
     }
   }
@@ -196,6 +207,45 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `YOUTUBE_ACCESS_TOKEN` | OAuth 2.0 access token from the [Google Cloud Console](https://console.cloud.google.com) — requires `https://www.googleapis.com/auth/youtube` scope |
 
+### Pinterest
+
+| Variable                  | Description                                                                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PINTEREST_ACCESS_TOKEN`  | OAuth 2.0 Bearer token from the [Pinterest Developer Portal](https://developers.pinterest.com) — requires `boards:read boards:write pins:read pins:write` scopes |
+
+### Email
+
+Email uses a Laravel-style driver system. Set `MAIL_MAILER` to select your provider — only configure the variables for the driver you choose.
+
+| Variable             | Description                                                            |
+| -------------------- | ---------------------------------------------------------------------- |
+| `MAIL_MAILER`        | Mail driver: `smtp`, `sendgrid`, or `mailgun` (default: `smtp`)        |
+| `MAIL_FROM_ADDRESS`  | Sender email address (required for all drivers)                        |
+| `MAIL_FROM_NAME`     | Sender display name (optional)                                         |
+
+**SMTP** (`MAIL_MAILER=smtp`)
+
+| Variable          | Description                                                                |
+| ----------------- | -------------------------------------------------------------------------- |
+| `MAIL_HOST`       | SMTP server hostname (e.g. `smtp.gmail.com`, `smtp.mailgun.org`)           |
+| `MAIL_PORT`       | SMTP port (default: `587`)                                                 |
+| `MAIL_USERNAME`   | SMTP authentication username                                               |
+| `MAIL_PASSWORD`   | SMTP authentication password                                               |
+| `MAIL_ENCRYPTION` | Connection security: `tls` (default), `ssl`, or `none`                     |
+
+**SendGrid** (`MAIL_MAILER=sendgrid`)
+
+| Variable           | Description                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `SENDGRID_API_KEY` | API key from the [SendGrid dashboard](https://app.sendgrid.com/settings/api_keys)      |
+
+**Mailgun** (`MAIL_MAILER=mailgun`)
+
+| Variable          | Description                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| `MAILGUN_API_KEY` | API key from [Mailgun account settings](https://app.mailgun.com/app/account/security/api_keys) |
+| `MAILGUN_DOMAIN`  | Your Mailgun sending domain (e.g. `mg.yourdomain.com`)                                       |
+
 ## Available Tools
 
 ### Telegram
@@ -316,6 +366,22 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 - **YOUTUBE_UPDATE_VIDEO** — Update a video's title, description, and tags (`videoId`, `title`, `description`, `tags`, `categoryId`)
 
 > **Note:** YouTube requires an OAuth 2.0 access token with the `https://www.googleapis.com/auth/youtube` scope. Enable the **YouTube Data API v3** in your [Google Cloud Console](https://console.cloud.google.com) project. Video uploads are not supported via this API — use the YouTube Studio or resumable upload flow directly.
+
+### Pinterest
+
+- **PINTEREST_GET_BOARDS** — List all boards on your Pinterest account (`pageSize`)
+- **PINTEREST_CREATE_BOARD** — Create a new board (`name`, `description`)
+- **PINTEREST_CREATE_PIN** — Create a pin on a board (`boardId`, `title`, `description`, `imageUrl`, `link`)
+- **PINTEREST_GET_PIN** — Get details of a specific pin (`pinId`)
+- **PINTEREST_GET_BOARD_PINS** — List all pins on a board (`boardId`, `pageSize`)
+- **PINTEREST_DELETE_PIN** — Delete a pin by ID (`pinId`)
+
+### Email
+
+- **EMAIL_SEND** — Send an email to a single recipient (`to`, `subject`, `text`, `html`)
+- **EMAIL_SEND_BULK** — Send the same email to multiple recipients (`recipients`, `subject`, `text`, `html`)
+
+> The active mail driver is selected by `MAIL_MAILER`. Switching providers (e.g. from SMTP to SendGrid) requires only changing that one variable and providing the corresponding credentials — no code changes needed.
 
 ## Development
 

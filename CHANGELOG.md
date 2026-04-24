@@ -1,5 +1,18 @@
 # social-mcp
 
+## 1.8.0
+
+### Minor Changes
+
+- added pinterest and email tools
+
+## 1.8.0
+
+### Minor Changes
+
+- Added Pinterest tools: get boards, create board, create pin, get pin, get board pins, delete pin
+- Added Email tools with Laravel-style driver system: send email, send bulk email (supports SMTP, SendGrid, Mailgun)
+
 ## 1.7.1
 
 ### Patch Changes

@@ -2,10 +2,14 @@
 import { createRequire } from "node:module";
 import { FastMCP } from "fastmcp";
 import { CredentialsError } from "./lib/errors.js";
+import { getBlueskyService } from "./services/bluesky-service.js";
 import { getDiscordService } from "./services/discord-service.js";
+import { getEmailService } from "./services/email-service.js";
 import { getFacebookService } from "./services/facebook-service.js";
 import { getInstagramService } from "./services/instagram-service.js";
 import { getLinkedInService } from "./services/linkedin-service.js";
+import { getMastodonService } from "./services/mastodon-service.js";
+import { getPinterestService } from "./services/pinterest-service.js";
 import { getRedditService } from "./services/reddit-service.js";
 import { getSlackService } from "./services/slack-service.js";
 import { getTelegramService } from "./services/telegram-service.js";
@@ -14,10 +18,16 @@ import { getTikTokService } from "./services/tiktok-service.js";
 import { getTwitterService } from "./services/twitter-service.js";
 import { getWhatsappService } from "./services/whatsapp-service.js";
 import { getYouTubeService } from "./services/youtube-service.js";
-import { getBlueskyService } from "./services/bluesky-service.js";
-import { getMastodonService } from "./services/mastodon-service.js";
+import { createPostTool as blueskyCreatePostTool } from "./tools/bluesky-tools/create-post.js";
+import { deletePostTool as blueskyDeletePostTool } from "./tools/bluesky-tools/delete-post.js";
+import { getProfileTool as blueskyGetProfileTool } from "./tools/bluesky-tools/get-profile.js";
+import { likePostTool as blueskyLikePostTool } from "./tools/bluesky-tools/like-post.js";
+import { replyToPostTool as blueskyReplyToPostTool } from "./tools/bluesky-tools/reply-to-post.js";
+import { searchPostsTool as blueskySearchPostsTool } from "./tools/bluesky-tools/search-posts.js";
 import { getMessagesTool as discordGetMessagesTool } from "./tools/discord-tools/get-messages.js";
 import { sendMessageTool as discordSendMessageTool } from "./tools/discord-tools/send-message.js";
+import { sendBulkEmailTool } from "./tools/email-tools/send-bulk-email.js";
+import { sendEmailTool } from "./tools/email-tools/send-email.js";
 import { createPostTool as facebookCreatePostTool } from "./tools/facebook-tools/create-post.js";
 import { getPostsTool as facebookGetPostsTool } from "./tools/facebook-tools/get-posts.js";
 import { createPostTool as instagramCreatePostTool } from "./tools/instagram-tools/create-post.js";
@@ -29,9 +39,22 @@ import { getPostsTool as linkedInGetPostsTool } from "./tools/linkedin-tools/get
 import { getProfileTool as linkedInGetProfileTool } from "./tools/linkedin-tools/get-profile.js";
 import { likePostTool as linkedInLikePostTool } from "./tools/linkedin-tools/like-post.js";
 import { searchPeopleTool as linkedInSearchPeopleTool } from "./tools/linkedin-tools/search-people.js";
+import { boostPostTool as mastodonBoostPostTool } from "./tools/mastodon-tools/boost-post.js";
+import { createPostTool as mastodonCreatePostTool } from "./tools/mastodon-tools/create-post.js";
+import { deletePostTool as mastodonDeletePostTool } from "./tools/mastodon-tools/delete-post.js";
+import { favouritePostTool as mastodonFavouritePostTool } from "./tools/mastodon-tools/favourite-post.js";
+import { getProfileTool as mastodonGetProfileTool } from "./tools/mastodon-tools/get-profile.js";
+import { replyToPostTool as mastodonReplyToPostTool } from "./tools/mastodon-tools/reply-to-post.js";
+import { searchPostsTool as mastodonSearchPostsTool } from "./tools/mastodon-tools/search-posts.js";
+import { createBoardTool as pinterestCreateBoardTool } from "./tools/pinterest-tools/create-board.js";
+import { createPinTool as pinterestCreatePinTool } from "./tools/pinterest-tools/create-pin.js";
+import { deletePinTool as pinterestDeletePinTool } from "./tools/pinterest-tools/delete-pin.js";
+import { getBoardPinsTool as pinterestGetBoardPinsTool } from "./tools/pinterest-tools/get-board-pins.js";
+import { getBoardsTool as pinterestGetBoardsTool } from "./tools/pinterest-tools/get-boards.js";
+import { getPinTool as pinterestGetPinTool } from "./tools/pinterest-tools/get-pin.js";
 import { commentTool as redditCommentTool } from "./tools/reddit-tools/comment.js";
-import { getUserInfoTool as redditGetUserInfoTool } from "./tools/reddit-tools/get-user-info.js";
 import { getPostsTool as redditGetPostsTool } from "./tools/reddit-tools/get-posts.js";
+import { getUserInfoTool as redditGetUserInfoTool } from "./tools/reddit-tools/get-user-info.js";
 import { searchTool as redditSearchTool } from "./tools/reddit-tools/search.js";
 import { submitPostTool as redditSubmitPostTool } from "./tools/reddit-tools/submit-post.js";
 import { voteTool as redditVoteTool } from "./tools/reddit-tools/vote.js";
@@ -69,19 +92,6 @@ import { listChannelVideosTool as youtubeListChannelVideosTool } from "./tools/y
 import { postCommentTool as youtubePostCommentTool } from "./tools/youtube-tools/post-comment.js";
 import { searchVideosTool as youtubeSearchVideosTool } from "./tools/youtube-tools/search-videos.js";
 import { updateVideoTool as youtubeUpdateVideoTool } from "./tools/youtube-tools/update-video.js";
-import { createPostTool as blueskyCreatePostTool } from "./tools/bluesky-tools/create-post.js";
-import { deletePostTool as blueskyDeletePostTool } from "./tools/bluesky-tools/delete-post.js";
-import { getProfileTool as blueskyGetProfileTool } from "./tools/bluesky-tools/get-profile.js";
-import { likePostTool as blueskyLikePostTool } from "./tools/bluesky-tools/like-post.js";
-import { replyToPostTool as blueskyReplyToPostTool } from "./tools/bluesky-tools/reply-to-post.js";
-import { searchPostsTool as blueskySearchPostsTool } from "./tools/bluesky-tools/search-posts.js";
-import { boostPostTool as mastodonBoostPostTool } from "./tools/mastodon-tools/boost-post.js";
-import { createPostTool as mastodonCreatePostTool } from "./tools/mastodon-tools/create-post.js";
-import { deletePostTool as mastodonDeletePostTool } from "./tools/mastodon-tools/delete-post.js";
-import { favouritePostTool as mastodonFavouritePostTool } from "./tools/mastodon-tools/favourite-post.js";
-import { getProfileTool as mastodonGetProfileTool } from "./tools/mastodon-tools/get-profile.js";
-import { replyToPostTool as mastodonReplyToPostTool } from "./tools/mastodon-tools/reply-to-post.js";
-import { searchPostsTool as mastodonSearchPostsTool } from "./tools/mastodon-tools/search-posts.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as {
@@ -119,6 +129,8 @@ async function main() {
 	checkPlatform("YouTube", getYouTubeService);
 	checkPlatform("Bluesky", getBlueskyService);
 	checkPlatform("Mastodon", getMastodonService);
+	checkPlatform("Pinterest", getPinterestService);
+	checkPlatform("Email", getEmailService);
 	console.error("");
 
 	const server = new FastMCP({ name: "Social MCP Server", version });
@@ -216,6 +228,18 @@ async function main() {
 	server.addTool(mastodonFavouritePostTool);
 	server.addTool(mastodonGetProfileTool);
 	server.addTool(mastodonSearchPostsTool);
+
+	// Pinterest
+	server.addTool(pinterestGetBoardsTool);
+	server.addTool(pinterestCreateBoardTool);
+	server.addTool(pinterestCreatePinTool);
+	server.addTool(pinterestGetPinTool);
+	server.addTool(pinterestGetBoardPinsTool);
+	server.addTool(pinterestDeletePinTool);
+
+	// Email
+	server.addTool(sendEmailTool);
+	server.addTool(sendBulkEmailTool);
 
 	try {
 		await server.start({ transportType: "stdio" });

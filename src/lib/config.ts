@@ -53,4 +53,27 @@ export const config = {
 		instanceUrl: process.env.MASTODON_INSTANCE_URL || "https://mastodon.social",
 		accessToken: process.env.MASTODON_ACCESS_TOKEN || "",
 	},
+	pinterest: {
+		baseUrl: "https://api.pinterest.com/v5",
+		accessToken: process.env.PINTEREST_ACCESS_TOKEN || "",
+	},
+	email: {
+		mailer: process.env.MAIL_MAILER || "smtp",
+		fromAddress: process.env.MAIL_FROM_ADDRESS || "",
+		fromName: process.env.MAIL_FROM_NAME || "",
+		smtp: {
+			host: process.env.MAIL_HOST || "",
+			port: parseInt(process.env.MAIL_PORT || "587", 10),
+			username: process.env.MAIL_USERNAME || "",
+			password: process.env.MAIL_PASSWORD || "",
+			encryption: (process.env.MAIL_ENCRYPTION || "tls") as "tls" | "ssl" | "none",
+		},
+		sendgrid: {
+			apiKey: process.env.SENDGRID_API_KEY || "",
+		},
+		mailgun: {
+			apiKey: process.env.MAILGUN_API_KEY || "",
+			domain: process.env.MAILGUN_DOMAIN || "",
+		},
+	},
 };
