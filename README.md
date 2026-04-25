@@ -215,7 +215,9 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 
 ### Email
 
-Email uses a Laravel-style driver system. Set `MAIL_MAILER` to select your provider — only configure the variables for the driver you choose.
+Email uses a Laravel-style driver system. **Env vars are optional** — credentials can also be passed inline per tool call (see [Per-org / Multi-account Usage](#per-org--multi-account-usage)).
+
+Set `MAIL_MAILER` to select your provider and only configure the variables for the driver you choose.
 
 | Variable             | Description                                                            |
 | -------------------- | ---------------------------------------------------------------------- |
@@ -232,6 +234,8 @@ Email uses a Laravel-style driver system. Set `MAIL_MAILER` to select your provi
 | `MAIL_USERNAME`   | SMTP authentication username                                               |
 | `MAIL_PASSWORD`   | SMTP authentication password                                               |
 | `MAIL_ENCRYPTION` | Connection security: `tls` (default), `ssl`, or `none`                     |
+
+> **SMTP verification:** On startup, social-mcp calls `transporter.verify()` against your SMTP server. A misconfigured host or wrong password shows `[!!]` in the startup log rather than failing silently on the first send.
 
 **SendGrid** (`MAIL_MAILER=sendgrid`)
 
@@ -378,10 +382,59 @@ Email uses a Laravel-style driver system. Set `MAIL_MAILER` to select your provi
 
 ### Email
 
-- **EMAIL_SEND** — Send an email to a single recipient (`to`, `subject`, `text`, `html`)
-- **EMAIL_SEND_BULK** — Send the same email to multiple recipients (`recipients`, `subject`, `text`, `html`)
+- **EMAIL_SEND** — Send an email to a single recipient (`to`, `subject`, `text`, `html`; plus optional inline credentials — see below)
+- **EMAIL_SEND_BULK** — Send the same email to multiple recipients (`recipients`, `subject`, `text`, `html`; plus optional inline credentials)
 
-> The active mail driver is selected by `MAIL_MAILER`. Switching providers (e.g. from SMTP to SendGrid) requires only changing that one variable and providing the corresponding credentials — no code changes needed.
+> The active mail driver is selected by `MAIL_MAILER`. Switching providers requires only changing that one variable — no code changes needed. Credentials can also be passed inline per call for multi-account / per-org use cases.
+
+## Per-org / Multi-account Usage
+
+Both email tools accept **inline credentials** as optional parameters. When provided, they take full priority over env vars — a fresh, isolated `EmailService` is created for that call. This enables per-organization or per-user email accounts without any env var changes.
+
+**Example — SMTP:**
+```json
+{
+  "mailer": "smtp",
+  "fromAddress": "team@acme.com",
+  "fromName": "Acme Corp",
+  "smtpHost": "smtp.gmail.com",
+  "smtpPort": 587,
+  "smtpUsername": "team@acme.com",
+  "smtpPassword": "app-password",
+  "smtpEncryption": "tls",
+  "to": "customer@example.com",
+  "subject": "Hello",
+  "text": "Hi there!"
+}
+```
+
+**Example — SendGrid:**
+```json
+{
+  "mailer": "sendgrid",
+  "fromAddress": "team@acme.com",
+  "sendgridApiKey": "SG.xxxx",
+  "recipients": ["a@example.com", "b@example.com"],
+  "subject": "Newsletter",
+  "text": "Plain text body",
+  "html": "<p>HTML body</p>"
+}
+```
+
+**Example — Mailgun:**
+```json
+{
+  "mailer": "mailgun",
+  "fromAddress": "team@acme.com",
+  "mailgunApiKey": "key-xxxx",
+  "mailgunDomain": "mg.acme.com",
+  "to": "customer@example.com",
+  "subject": "Hello",
+  "text": "Hi there!"
+}
+```
+
+When `mailer` and `fromAddress` are omitted, the tool falls back to the env var configuration (`MAIL_MAILER`, `MAIL_FROM_ADDRESS`, etc.).
 
 ## Development
 

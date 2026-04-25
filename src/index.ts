@@ -98,9 +98,12 @@ const { version } = require("../package.json") as {
 	version: `${number}.${number}.${number}`;
 };
 
-function checkPlatform(name: string, init: () => unknown): void {
+async function checkPlatform(
+	name: string,
+	init: () => unknown | Promise<unknown>,
+): Promise<void> {
 	try {
-		init();
+		await init();
 		console.error(`  [ok] ${name}`);
 	} catch (err) {
 		if (err instanceof CredentialsError) {
@@ -115,22 +118,25 @@ function checkPlatform(name: string, init: () => unknown): void {
 
 async function main() {
 	console.error("Social MCP Server — platform availability:");
-	checkPlatform("Telegram", getTelegramService);
-	checkPlatform("Twitter/X", getTwitterService);
-	checkPlatform("Discord", getDiscordService);
-	checkPlatform("WhatsApp", getWhatsappService);
-	checkPlatform("Facebook", getFacebookService);
-	checkPlatform("Instagram", getInstagramService);
-	checkPlatform("Slack", getSlackService);
-	checkPlatform("LinkedIn", getLinkedInService);
-	checkPlatform("Reddit", getRedditService);
-	checkPlatform("Threads", getThreadsService);
-	checkPlatform("TikTok", getTikTokService);
-	checkPlatform("YouTube", getYouTubeService);
-	checkPlatform("Bluesky", getBlueskyService);
-	checkPlatform("Mastodon", getMastodonService);
-	checkPlatform("Pinterest", getPinterestService);
-	checkPlatform("Email", getEmailService);
+	await checkPlatform("Telegram", getTelegramService);
+	await checkPlatform("Twitter/X", getTwitterService);
+	await checkPlatform("Discord", getDiscordService);
+	await checkPlatform("WhatsApp", getWhatsappService);
+	await checkPlatform("Facebook", getFacebookService);
+	await checkPlatform("Instagram", getInstagramService);
+	await checkPlatform("Slack", getSlackService);
+	await checkPlatform("LinkedIn", getLinkedInService);
+	await checkPlatform("Reddit", getRedditService);
+	await checkPlatform("Threads", getThreadsService);
+	await checkPlatform("TikTok", getTikTokService);
+	await checkPlatform("YouTube", getYouTubeService);
+	await checkPlatform("Bluesky", getBlueskyService);
+	await checkPlatform("Mastodon", getMastodonService);
+	await checkPlatform("Pinterest", getPinterestService);
+	await checkPlatform("Email", async () => {
+		const service = getEmailService();
+		await service.verify();
+	});
 	console.error("");
 
 	const server = new FastMCP({ name: "Social MCP Server", version });
