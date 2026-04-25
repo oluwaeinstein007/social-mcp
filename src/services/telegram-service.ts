@@ -1,6 +1,10 @@
 import { Telegraf } from "telegraf";
 import { CredentialsError } from "../lib/errors.js";
 
+export interface TelegramCredentials {
+	botToken: string;
+}
+
 export interface ChannelInfo {
 	id: number;
 	title: string;
@@ -20,8 +24,8 @@ export interface MessageInfo {
 export class TelegramService {
 	private bot: Telegraf;
 
-	constructor() {
-		const botToken = process.env.TELEGRAM_BOT_TOKEN;
+	constructor(credentials?: TelegramCredentials) {
+		const botToken = credentials?.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
 		if (!botToken) {
 			throw new CredentialsError("Telegram", ["TELEGRAM_BOT_TOKEN"]);
 		}

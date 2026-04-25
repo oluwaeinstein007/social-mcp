@@ -18,17 +18,22 @@ const facebookPostsResponseSchema = z.object({
 	data: z.array(facebookPostDetailSchema),
 });
 
+export interface FacebookCredentials {
+	accessToken: string;
+}
+
 export class FacebookService {
 	private baseUrl = config.facebook.baseUrl;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.facebook.accessToken) {
+	constructor(credentials?: FacebookCredentials) {
+		const accessToken = credentials?.accessToken ?? config.facebook.accessToken;
+		if (!accessToken) {
 			throw new CredentialsError("Facebook", ["FACEBOOK_ACCESS_TOKEN"]);
 		}
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.facebook.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 

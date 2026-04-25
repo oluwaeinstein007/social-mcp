@@ -77,17 +77,22 @@ const tiktokStatusSchema = z.object({
 		.optional(),
 });
 
+export interface TikTokCredentials {
+	accessToken: string;
+}
+
 export class TikTokService {
 	private baseUrl = config.tiktok.baseUrl;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.tiktok.accessToken) {
+	constructor(credentials?: TikTokCredentials) {
+		const accessToken = credentials?.accessToken ?? config.tiktok.accessToken;
+		if (!accessToken) {
 			throw new CredentialsError("TikTok", ["TIKTOK_ACCESS_TOKEN"]);
 		}
 		this.headers = {
 			"Content-Type": "application/json; charset=UTF-8",
-			Authorization: `Bearer ${config.tiktok.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 

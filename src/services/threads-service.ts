@@ -41,20 +41,31 @@ const threadsPostsSchema = z.object({
 		.optional(),
 });
 
+export interface ThreadsCredentials {
+	accessToken: string;
+	userId: string;
+}
+
 export class ThreadsService {
 	private baseUrl = config.threads.baseUrl;
+	private accessToken: string;
+	private userId: string;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.threads.accessToken || !config.threads.userId) {
+	constructor(credentials?: ThreadsCredentials) {
+		const accessToken = credentials?.accessToken ?? config.threads.accessToken;
+		const userId = credentials?.userId ?? config.threads.userId;
+		if (!accessToken || !userId) {
 			throw new CredentialsError("Threads", [
 				"THREADS_ACCESS_TOKEN",
 				"THREADS_USER_ID",
 			]);
 		}
+		this.accessToken = accessToken;
+		this.userId = userId;
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.threads.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 
@@ -62,7 +73,7 @@ export class ThreadsService {
 		const fields =
 			"id,username,name,biography,followers_count,profile_picture_url";
 		return fetchJson(
-			`${this.baseUrl}/me?fields=${fields}&access_token=${config.threads.accessToken}`,
+			`${this.baseUrl}/me?fields=${fields}&access_token=${this.accessToken}`,
 			{ method: "GET", headers: this.headers },
 			threadsProfileSchema,
 		);
@@ -72,24 +83,24 @@ export class ThreadsService {
 		const body: Record<string, string> = {
 			media_type: "TEXT",
 			text,
-			access_token: config.threads.accessToken,
+			access_token: this.accessToken,
 		};
 		if (replyToId) body.reply_to_id = replyToId;
 
 		const container = await fetchJson(
-			`${this.baseUrl}/${config.threads.userId}/threads`,
+			`${this.baseUrl}/${this.userId}/threads`,
 			{ method: "POST", headers: this.headers, body: JSON.stringify(body) },
 			threadsMediaSchema,
 		);
 
 		return fetchJson(
-			`${this.baseUrl}/${config.threads.userId}/threads_publish`,
+			`${this.baseUrl}/${this.userId}/threads_publish`,
 			{
 				method: "POST",
 				headers: this.headers,
 				body: JSON.stringify({
 					creation_id: container.id,
-					access_token: config.threads.accessToken,
+					access_token: this.accessToken,
 				}),
 			},
 			threadsPublishSchema,
@@ -100,7 +111,7 @@ export class ThreadsService {
 		const fields =
 			"id,text,media_type,timestamp,permalink,like_count,replies_count";
 		return fetchJson(
-			`${this.baseUrl}/${config.threads.userId}/threads?fields=${fields}&limit=${limit}&access_token=${config.threads.accessToken}`,
+			`${this.baseUrl}/${this.userId}/threads?fields=${fields}&limit=${limit}&access_token=${this.accessToken}`,
 			{ method: "GET", headers: this.headers },
 			threadsPostsSchema,
 		);
@@ -108,7 +119,7 @@ export class ThreadsService {
 
 	async deletePost(mediaId: string) {
 		const response = await fetch(
-			`${this.baseUrl}/${mediaId}?access_token=${config.threads.accessToken}`,
+			`${this.baseUrl}/${mediaId}?access_token=${this.accessToken}`,
 			{ method: "DELETE", headers: this.headers },
 		);
 		if (!response.ok) {

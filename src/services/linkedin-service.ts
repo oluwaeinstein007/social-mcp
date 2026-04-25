@@ -59,17 +59,22 @@ const linkedInSearchResponseSchema = z.object({
 		.optional(),
 });
 
+export interface LinkedInCredentials {
+	accessToken: string;
+}
+
 export class LinkedInService {
 	private baseUrl = config.linkedin.baseUrl;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.linkedin.accessToken) {
+	constructor(credentials?: LinkedInCredentials) {
+		const accessToken = credentials?.accessToken ?? config.linkedin.accessToken;
+		if (!accessToken) {
 			throw new CredentialsError("LinkedIn", ["LINKEDIN_ACCESS_TOKEN"]);
 		}
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.linkedin.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 			"X-Restli-Protocol-Version": "2.0.0",
 		};
 	}

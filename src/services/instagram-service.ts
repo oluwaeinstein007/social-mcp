@@ -18,17 +18,22 @@ const instagramMediaListSchema = z.object({
 	data: z.array(instagramMediaDetailSchema),
 });
 
+export interface InstagramCredentials {
+	accessToken: string;
+}
+
 export class InstagramService {
 	private baseUrl = config.instagram.baseUrl;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.instagram.accessToken) {
+	constructor(credentials?: InstagramCredentials) {
+		const accessToken = credentials?.accessToken ?? config.instagram.accessToken;
+		if (!accessToken) {
 			throw new CredentialsError("Instagram", ["INSTAGRAM_ACCESS_TOKEN"]);
 		}
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.instagram.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 

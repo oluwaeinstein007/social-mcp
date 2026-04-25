@@ -1,14 +1,23 @@
 import { TwitterApi } from "twitter-api-v2";
 import { CredentialsError } from "../lib/errors.js";
 
+export interface TwitterCredentials {
+	appKey: string;
+	appSecret: string;
+	accessToken: string;
+	accessSecret: string;
+}
+
 export class TwitterService {
 	private client: TwitterApi;
 
-	constructor() {
-		const appKey = process.env.TWITTER_APP_KEY;
-		const appSecret = process.env.TWITTER_APP_SECRET;
-		const accessToken = process.env.TWITTER_ACCESS_TOKEN;
-		const accessSecret = process.env.TWITTER_ACCESS_SECRET;
+	constructor(credentials?: TwitterCredentials) {
+		const appKey = credentials?.appKey ?? process.env.TWITTER_APP_KEY;
+		const appSecret = credentials?.appSecret ?? process.env.TWITTER_APP_SECRET;
+		const accessToken =
+			credentials?.accessToken ?? process.env.TWITTER_ACCESS_TOKEN;
+		const accessSecret =
+			credentials?.accessSecret ?? process.env.TWITTER_ACCESS_SECRET;
 
 		const missing: string[] = [];
 		if (!appKey) missing.push("TWITTER_APP_KEY");

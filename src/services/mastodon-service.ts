@@ -29,18 +29,25 @@ const mastodonSearchSchema = z.object({
 	statuses: z.array(mastodonStatusSchema),
 });
 
+export interface MastodonCredentials {
+	accessToken: string;
+	instanceUrl?: string;
+}
+
 export class MastodonService {
 	private baseUrl: string;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.mastodon.accessToken) {
+	constructor(credentials?: MastodonCredentials) {
+		const accessToken = credentials?.accessToken ?? config.mastodon.accessToken;
+		const instanceUrl = credentials?.instanceUrl ?? config.mastodon.instanceUrl;
+		if (!accessToken) {
 			throw new CredentialsError("Mastodon", ["MASTODON_ACCESS_TOKEN"]);
 		}
-		this.baseUrl = `${config.mastodon.instanceUrl}/api/v1`;
+		this.baseUrl = `${instanceUrl}/api/v1`;
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.mastodon.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 

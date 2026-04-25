@@ -1,11 +1,15 @@
 import { WebClient } from "@slack/web-api";
 import { CredentialsError } from "../lib/errors.js";
 
+export interface SlackCredentials {
+	botToken: string;
+}
+
 export class SlackService {
 	private web: WebClient;
 
-	constructor() {
-		const token = process.env.SLACK_BOT_TOKEN;
+	constructor(credentials?: SlackCredentials) {
+		const token = credentials?.botToken ?? process.env.SLACK_BOT_TOKEN;
 		if (!token) {
 			throw new CredentialsError("Slack", ["SLACK_BOT_TOKEN"]);
 		}

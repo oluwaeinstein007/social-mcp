@@ -154,17 +154,22 @@ const videoUpdateSchema = z.object({
 		.optional(),
 });
 
+export interface YouTubeCredentials {
+	accessToken: string;
+}
+
 export class YouTubeService {
 	private baseUrl = config.youtube.baseUrl;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.youtube.accessToken) {
+	constructor(credentials?: YouTubeCredentials) {
+		const accessToken = credentials?.accessToken ?? config.youtube.accessToken;
+		if (!accessToken) {
 			throw new CredentialsError("YouTube", ["YOUTUBE_ACCESS_TOKEN"]);
 		}
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.youtube.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 

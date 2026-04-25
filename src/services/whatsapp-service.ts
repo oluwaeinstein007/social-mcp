@@ -9,22 +9,30 @@ const whatsappMessageSchema = z.object({
 	messages: z.array(z.object({ id: z.string() })),
 });
 
+export interface WhatsappCredentials {
+	accessToken: string;
+	phoneNumberId: string;
+}
+
 export class WhatsappService {
 	private baseUrl = config.whatsapp.baseUrl;
-	private phoneNumberId = config.whatsapp.phoneNumberId;
+	private phoneNumberId: string;
 	private headers: Record<string, string>;
 
-	constructor() {
+	constructor(credentials?: WhatsappCredentials) {
+		const accessToken = credentials?.accessToken ?? config.whatsapp.accessToken;
+		const phoneNumberId =
+			credentials?.phoneNumberId ?? config.whatsapp.phoneNumberId;
 		const missing: string[] = [];
-		if (!config.whatsapp.accessToken) missing.push("WHATSAPP_ACCESS_TOKEN");
-		if (!config.whatsapp.phoneNumberId)
-			missing.push("WHATSAPP_PHONE_NUMBER_ID");
+		if (!accessToken) missing.push("WHATSAPP_ACCESS_TOKEN");
+		if (!phoneNumberId) missing.push("WHATSAPP_PHONE_NUMBER_ID");
 		if (missing.length > 0) {
 			throw new CredentialsError("WhatsApp", missing);
 		}
+		this.phoneNumberId = phoneNumberId;
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${config.whatsapp.accessToken}`,
+			Authorization: `Bearer ${accessToken}`,
 		};
 	}
 

@@ -63,18 +63,30 @@ const redditUserSchema = z.object({
 	}),
 });
 
+export interface RedditCredentials {
+	clientId: string;
+	clientSecret: string;
+	username: string;
+	password: string;
+	userAgent?: string;
+}
+
 export class RedditService {
 	private baseUrl = config.reddit.baseUrl;
-	private userAgent = config.reddit.userAgent;
+	private userAgent: string;
+	private clientId: string;
+	private clientSecret: string;
+	private username: string;
+	private password: string;
 	private _accessToken: string | null = null;
 
-	constructor() {
-		if (
-			!config.reddit.clientId ||
-			!config.reddit.clientSecret ||
-			!config.reddit.username ||
-			!config.reddit.password
-		) {
+	constructor(credentials?: RedditCredentials) {
+		const clientId = credentials?.clientId ?? config.reddit.clientId;
+		const clientSecret =
+			credentials?.clientSecret ?? config.reddit.clientSecret;
+		const username = credentials?.username ?? config.reddit.username;
+		const password = credentials?.password ?? config.reddit.password;
+		if (!clientId || !clientSecret || !username || !password) {
 			throw new CredentialsError("Reddit", [
 				"REDDIT_CLIENT_ID",
 				"REDDIT_CLIENT_SECRET",
@@ -82,24 +94,29 @@ export class RedditService {
 				"REDDIT_PASSWORD",
 			]);
 		}
+		this.clientId = clientId;
+		this.clientSecret = clientSecret;
+		this.username = username;
+		this.password = password;
+		this.userAgent = credentials?.userAgent ?? config.reddit.userAgent;
 	}
 
 	private async authenticate(): Promise<string> {
 		if (this._accessToken) return this._accessToken;
-		const credentials = Buffer.from(
-			`${config.reddit.clientId}:${config.reddit.clientSecret}`,
+		const encoded = Buffer.from(
+			`${this.clientId}:${this.clientSecret}`,
 		).toString("base64");
 		const response = await fetch("https://www.reddit.com/api/v1/access_token", {
 			method: "POST",
 			headers: {
-				Authorization: `Basic ${credentials}`,
+				Authorization: `Basic ${encoded}`,
 				"Content-Type": "application/x-www-form-urlencoded",
 				"User-Agent": this.userAgent,
 			},
 			body: new URLSearchParams({
 				grant_type: "password",
-				username: config.reddit.username,
-				password: config.reddit.password,
+				username: this.username,
+				password: this.password,
 			}),
 		});
 		if (!response.ok) {

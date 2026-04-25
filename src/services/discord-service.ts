@@ -12,17 +12,22 @@ const discordMessageSchema = z.object({
 
 const discordMessagesSchema = z.array(discordMessageSchema);
 
+export interface DiscordCredentials {
+	botToken: string;
+}
+
 export class DiscordService {
 	private baseUrl = config.discord.baseUrl;
 	private headers: Record<string, string>;
 
-	constructor() {
-		if (!config.discord.botToken) {
+	constructor(credentials?: DiscordCredentials) {
+		const botToken = credentials?.botToken ?? config.discord.botToken;
+		if (!botToken) {
 			throw new CredentialsError("Discord", ["DISCORD_BOT_TOKEN"]);
 		}
 		this.headers = {
 			"Content-Type": "application/json",
-			Authorization: `Bot ${config.discord.botToken}`,
+			Authorization: `Bot ${botToken}`,
 		};
 	}
 

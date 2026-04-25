@@ -2,25 +2,38 @@ import { BskyAgent } from "@atproto/api";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 
+export interface BlueskyCredentials {
+	identifier: string;
+	appPassword: string;
+	service?: string;
+}
+
 export class BlueskyService {
 	private agent: BskyAgent;
+	private identifier: string;
+	private appPassword: string;
 	private loggedIn = false;
 
-	constructor() {
-		if (!config.bluesky.identifier || !config.bluesky.appPassword) {
+	constructor(credentials?: BlueskyCredentials) {
+		const identifier = credentials?.identifier ?? config.bluesky.identifier;
+		const appPassword = credentials?.appPassword ?? config.bluesky.appPassword;
+		const service = credentials?.service ?? config.bluesky.service;
+		if (!identifier || !appPassword) {
 			throw new CredentialsError("Bluesky", [
 				"BLUESKY_IDENTIFIER",
 				"BLUESKY_APP_PASSWORD",
 			]);
 		}
-		this.agent = new BskyAgent({ service: config.bluesky.service });
+		this.identifier = identifier;
+		this.appPassword = appPassword;
+		this.agent = new BskyAgent({ service });
 	}
 
 	private async ensureLoggedIn() {
 		if (!this.loggedIn) {
 			await this.agent.login({
-				identifier: config.bluesky.identifier,
-				password: config.bluesky.appPassword,
+				identifier: this.identifier,
+				password: this.appPassword,
 			});
 			this.loggedIn = true;
 		}
