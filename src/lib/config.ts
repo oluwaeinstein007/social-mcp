@@ -61,6 +61,35 @@ export const config = {
 		baseUrl: "https://api.medium.com/v1",
 		accessToken: process.env.MEDIUM_ACCESS_TOKEN || "",
 	},
+	devto: {
+		baseUrl: "https://dev.to/api",
+		apiKey: process.env.DEVTO_API_KEY || "",
+	},
+	hashnode: {
+		baseUrl: "https://gql.hashnode.com",
+		accessToken: process.env.HASHNODE_ACCESS_TOKEN || "",
+		publicationId: process.env.HASHNODE_PUBLICATION_ID || "",
+	},
+	beehiiv: {
+		baseUrl: "https://api.beehiiv.com/v2",
+		apiKey: process.env.BEEHIIV_API_KEY || "",
+		publicationId: process.env.BEEHIIV_PUBLICATION_ID || "",
+	},
+	ghost: {
+		siteUrl: process.env.GHOST_SITE_URL || "",
+		adminApiKey: process.env.GHOST_ADMIN_API_KEY || "",
+	},
+	twitch: {
+		baseUrl: "https://api.twitch.tv/helix",
+		clientId: process.env.TWITCH_CLIENT_ID || "",
+		clientSecret: process.env.TWITCH_CLIENT_SECRET || "",
+		accessToken: process.env.TWITCH_ACCESS_TOKEN || "",
+	},
+	tumblr: {
+		baseUrl: "https://api.tumblr.com/v2",
+		accessToken: process.env.TUMBLR_ACCESS_TOKEN || "",
+		blogIdentifier: process.env.TUMBLR_BLOG_IDENTIFIER || "",
+	},
 	email: {
 		mailer: process.env.MAIL_MAILER || "smtp",
 		fromAddress: process.env.MAIL_FROM_ADDRESS || "",

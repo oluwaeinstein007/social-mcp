@@ -23,6 +23,12 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | Pinterest | Get boards, create board, create pin, get pin, get board pins, delete pin                                              |
 | Medium    | Get user profile, publish article (Markdown, up to 5 tags, public/draft/unlisted)                                      |
 | Email     | Send email, send bulk email (drivers: SMTP, SendGrid, Mailgun)                                                         |
+| Dev.to    | Create article, get my articles, get article by ID, update article                                                     |
+| Hashnode  | Create post, get posts, get publication info                                                                            |
+| Beehiiv   | Create newsletter post, get posts, get subscribers                                                                     |
+| Ghost     | Create post, get posts, update post, delete post                                                                        |
+| Twitch    | Get user, get live streams, get channel info, search channels, send chat message                                        |
+| Tumblr    | Get blog info, create post, get posts, delete post                                                                      |
 
 ## Quick Start
 
@@ -84,7 +90,19 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "MAIL_PORT": "587",
         "MAIL_USERNAME": "you@gmail.com",
         "MAIL_PASSWORD": "your_password",
-        "MAIL_ENCRYPTION": "tls"
+        "MAIL_ENCRYPTION": "tls",
+        "DEVTO_API_KEY": "your_api_key",
+        "HASHNODE_ACCESS_TOKEN": "your_token",
+        "HASHNODE_PUBLICATION_ID": "your_publication_id",
+        "BEEHIIV_API_KEY": "your_api_key",
+        "BEEHIIV_PUBLICATION_ID": "your_publication_id",
+        "GHOST_SITE_URL": "https://your-blog.ghost.io",
+        "GHOST_ADMIN_API_KEY": "your_id:your_secret",
+        "TWITCH_CLIENT_ID": "your_client_id",
+        "TWITCH_CLIENT_SECRET": "your_client_secret",
+        "TWITCH_ACCESS_TOKEN": "your_user_token",
+        "TUMBLR_ACCESS_TOKEN": "your_oauth_token",
+        "TUMBLR_BLOG_IDENTIFIER": "your-blog-name"
       }
     }
   }
@@ -219,6 +237,48 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 | Variable               | Description                                                                                                                                   |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MEDIUM_ACCESS_TOKEN`  | Integration token from [Medium Settings](https://medium.com/me/settings) → Security and apps → Integration tokens → Get integration token    |
+
+### Dev.to
+
+| Variable       | Description                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| `DEVTO_API_KEY` | API key from [dev.to/settings/extensions](https://dev.to/settings/extensions) → DEV API Keys            |
+
+### Hashnode
+
+| Variable                   | Description                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `HASHNODE_ACCESS_TOKEN`    | Personal Access Token from [hashnode.com/settings/developer](https://hashnode.com/settings/developer) |
+| `HASHNODE_PUBLICATION_ID`  | Your publication's ID (visible in the Hashnode dashboard URL or via `HASHNODE_GET_PUBLICATION`)   |
+
+### Beehiiv
+
+| Variable                  | Description                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `BEEHIIV_API_KEY`         | API key from [app.beehiiv.com/settings/api](https://app.beehiiv.com/settings/api)            |
+| `BEEHIIV_PUBLICATION_ID`  | Your publication ID (found in the Beehiiv dashboard URL)                                      |
+
+### Ghost
+
+| Variable               | Description                                                                                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `GHOST_SITE_URL`       | Your Ghost site URL (e.g. `https://your-blog.ghost.io`)                                                           |
+| `GHOST_ADMIN_API_KEY`  | Admin API key in `id:secret` format from Ghost Admin → Settings → Integrations → Add custom integration          |
+
+### Twitch
+
+| Variable               | Description                                                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `TWITCH_CLIENT_ID`     | Client ID from the [Twitch Developer Console](https://dev.twitch.tv/console/apps)                                             |
+| `TWITCH_CLIENT_SECRET` | Client secret from the Twitch Developer Console                                                                                |
+| `TWITCH_ACCESS_TOKEN`  | (Optional) User OAuth token with `chat:edit` scope — only required for `TWITCH_SEND_CHAT_MESSAGE`                             |
+
+### Tumblr
+
+| Variable                  | Description                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `TUMBLR_ACCESS_TOKEN`     | OAuth 2.0 Bearer token from the [Tumblr API console](https://www.tumblr.com/oauth/apps) — requires write access for creating/deleting posts |
+| `TUMBLR_BLOG_IDENTIFIER`  | Your blog name or URL (e.g. `myblog` or `myblog.tumblr.com`)                                                                             |
 
 ### Email
 
@@ -400,6 +460,59 @@ Set `MAIL_MAILER` to select your provider and only configure the variables for t
 - **EMAIL_SEND_BULK** — Send the same email to multiple recipients (`recipients`, `subject`, `text`, `html`; plus optional inline credentials)
 
 > The active mail driver is selected by `MAIL_MAILER`. Switching providers requires only changing that one variable — no code changes needed. Credentials can also be passed inline per call for multi-account / per-org use cases.
+
+### Dev.to
+
+- **DEVTO_CREATE_ARTICLE** — Create or draft a Dev.to article (`title`, `bodyMarkdown`, `tags` up to 4, `published`, `description`, `canonicalUrl`, `series`, `mainImage`)
+- **DEVTO_GET_MY_ARTICLES** — List all articles published by the authenticated user (`page`, `perPage`)
+- **DEVTO_GET_ARTICLE** — Get a specific article by ID including its full Markdown body (`id`)
+- **DEVTO_UPDATE_ARTICLE** — Update an existing article (`id`, `title`, `bodyMarkdown`, `published`, `tags`, `description`, `canonicalUrl`)
+
+> **Note:** Get your API key at [dev.to/settings/extensions](https://dev.to/settings/extensions). Set `published: false` to save as a draft.
+
+### Hashnode
+
+- **HASHNODE_GET_PUBLICATION** — Get publication info including ID, title, and URL
+- **HASHNODE_GET_POSTS** — List recent posts from a Hashnode publication (`first`, `publicationId`)
+- **HASHNODE_CREATE_POST** — Publish a post to a Hashnode publication (`title`, `contentMarkdown`, `tags`, `subtitle`, `coverImageUrl`, `publicationId`)
+
+> **Note:** Tags are passed as `[{ name, slug }]` objects. Get your publication ID via `HASHNODE_GET_PUBLICATION` or from the Hashnode dashboard URL.
+
+### Beehiiv
+
+- **BEEHIIV_CREATE_POST** — Create a newsletter post (`title`, `bodyHtml`, `subtitle`, `status`, `audience`, `publicationId`)
+- **BEEHIIV_GET_POSTS** — List posts with send stats including open rate (`page`, `limit`, `publicationId`)
+- **BEEHIIV_GET_SUBSCRIBERS** — List subscribers with status and tier info (`page`, `limit`, `publicationId`)
+
+> **Note:** Set `status: "confirmed"` to schedule the post for sending. `status: "draft"` saves it without sending.
+
+### Ghost
+
+- **GHOST_CREATE_POST** — Create a post on a Ghost blog (`title`, `html`, `status`, `tags`, `excerpt`, `publishedAt`)
+- **GHOST_GET_POSTS** — List posts filtered by status (`page`, `limit`, `status`)
+- **GHOST_UPDATE_POST** — Update an existing post — requires the post's current `updated_at` timestamp for optimistic locking (`id`, `updatedAt`, `title`, `html`, `status`, `tags`, `excerpt`)
+- **GHOST_DELETE_POST** — Permanently delete a post (`id`)
+
+> **Note:** The Admin API key (`GHOST_ADMIN_API_KEY`) must be in `id:secret` format from Ghost Admin → Settings → Integrations. Ghost uses JWT authentication which is generated automatically per request.
+
+### Twitch
+
+- **TWITCH_GET_USER** — Get Twitch user info by username (`login`)
+- **TWITCH_GET_STREAMS** — Get currently live streams, filtered by usernames or game ID (`userLogins`, `gameId`, `first`)
+- **TWITCH_GET_CHANNEL_INFO** — Get channel details including current game and stream title (`broadcasterId`)
+- **TWITCH_SEARCH_CHANNELS** — Search channels by name with optional live-only filter (`query`, `liveOnly`, `first`)
+- **TWITCH_SEND_CHAT_MESSAGE** — Send a message to a Twitch chat channel (`broadcasterId`, `senderId`, `message`) — requires user OAuth token with `chat:edit` scope
+
+> **Note:** Most read tools use app access tokens generated automatically from `TWITCH_CLIENT_ID` + `TWITCH_CLIENT_SECRET`. `TWITCH_SEND_CHAT_MESSAGE` additionally requires `TWITCH_ACCESS_TOKEN` — a user-level OAuth token with the `chat:edit` scope.
+
+### Tumblr
+
+- **TUMBLR_GET_BLOG_INFO** — Get blog info including title, description, post count, and follower count (`blogIdentifier`)
+- **TUMBLR_CREATE_POST** — Create a text post using the Neue Post Format (`text`, `title`, `tags`, `state`, `blogIdentifier`)
+- **TUMBLR_GET_POSTS** — Get posts from a blog, optionally filtered by type (`offset`, `limit`, `type`, `blogIdentifier`)
+- **TUMBLR_DELETE_POST** — Delete a post by ID (`postId`, `blogIdentifier`)
+
+> **Note:** Tumblr uses OAuth 2.0 Bearer tokens. Set `state: "draft"` or `"queue"` to save without publishing immediately.
 
 ## Per-org / Multi-account Usage
 

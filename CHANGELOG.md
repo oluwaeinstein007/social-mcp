@@ -1,5 +1,16 @@
 # social-mcp
 
+## 2.2.0
+
+### Minor Changes
+
+- Added Dev.to tools: create article, get my articles, get article by ID, update article
+- Added Hashnode tools: create post, get posts, get publication info (GraphQL API)
+- Added Beehiiv tools: create newsletter post, get posts (with open/click stats), get subscribers
+- Added Ghost tools: create post, get posts, update post, delete post (Admin API with JWT auth)
+- Added Twitch tools: get user, get live streams, get channel info, search channels, send chat message (Helix API)
+- Added Tumblr tools: get blog info, create post, get posts, delete post (NPF v2 API)
+
 ## 2.1.0
 
 ### Minor Changes

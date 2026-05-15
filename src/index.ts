@@ -19,6 +19,12 @@ import { getTikTokService } from "./services/tiktok-service.js";
 import { getTwitterService } from "./services/twitter-service.js";
 import { getWhatsappService } from "./services/whatsapp-service.js";
 import { getYouTubeService } from "./services/youtube-service.js";
+import { getBeehiivService } from "./services/beehiiv-service.js";
+import { getDevToService } from "./services/devto-service.js";
+import { getGhostService } from "./services/ghost-service.js";
+import { getHashnodeService } from "./services/hashnode-service.js";
+import { getTumblrService } from "./services/tumblr-service.js";
+import { getTwitchService } from "./services/twitch-service.js";
 import { createPostTool as blueskyCreatePostTool } from "./tools/bluesky-tools/create-post.js";
 import { deletePostTool as blueskyDeletePostTool } from "./tools/bluesky-tools/delete-post.js";
 import { getProfileTool as blueskyGetProfileTool } from "./tools/bluesky-tools/get-profile.js";
@@ -95,6 +101,29 @@ import { listChannelVideosTool as youtubeListChannelVideosTool } from "./tools/y
 import { postCommentTool as youtubePostCommentTool } from "./tools/youtube-tools/post-comment.js";
 import { searchVideosTool as youtubeSearchVideosTool } from "./tools/youtube-tools/search-videos.js";
 import { updateVideoTool as youtubeUpdateVideoTool } from "./tools/youtube-tools/update-video.js";
+import { createArticleTool as devtoCreateArticleTool } from "./tools/devto-tools/create-article.js";
+import { getArticlesTool as devtoGetArticlesTool } from "./tools/devto-tools/get-articles.js";
+import { getArticleTool as devtoGetArticleTool } from "./tools/devto-tools/get-article.js";
+import { updateArticleTool as devtoUpdateArticleTool } from "./tools/devto-tools/update-article.js";
+import { createPostTool as hashnodeCreatePostTool } from "./tools/hashnode-tools/create-post.js";
+import { getPostsTool as hashnodeGetPostsTool } from "./tools/hashnode-tools/get-posts.js";
+import { getPublicationTool as hashnodeGetPublicationTool } from "./tools/hashnode-tools/get-publication.js";
+import { createPostTool as beehiivCreatePostTool } from "./tools/beehiiv-tools/create-post.js";
+import { getPostsTool as beehiivGetPostsTool } from "./tools/beehiiv-tools/get-posts.js";
+import { getSubscribersTool as beehiivGetSubscribersTool } from "./tools/beehiiv-tools/get-subscribers.js";
+import { createPostTool as ghostCreatePostTool } from "./tools/ghost-tools/create-post.js";
+import { getPostsTool as ghostGetPostsTool } from "./tools/ghost-tools/get-posts.js";
+import { updatePostTool as ghostUpdatePostTool } from "./tools/ghost-tools/update-post.js";
+import { deletePostTool as ghostDeletePostTool } from "./tools/ghost-tools/delete-post.js";
+import { getUserTool as twitchGetUserTool } from "./tools/twitch-tools/get-user.js";
+import { getStreamsTool as twitchGetStreamsTool } from "./tools/twitch-tools/get-streams.js";
+import { getChannelInfoTool as twitchGetChannelInfoTool } from "./tools/twitch-tools/get-channel-info.js";
+import { searchChannelsTool as twitchSearchChannelsTool } from "./tools/twitch-tools/search-channels.js";
+import { sendChatMessageTool as twitchSendChatMessageTool } from "./tools/twitch-tools/send-chat-message.js";
+import { createPostTool as tumblrCreatePostTool } from "./tools/tumblr-tools/create-post.js";
+import { getPostsTool as tumblrGetPostsTool } from "./tools/tumblr-tools/get-posts.js";
+import { deletePostTool as tumblrDeletePostTool } from "./tools/tumblr-tools/delete-post.js";
+import { getBlogInfoTool as tumblrGetBlogInfoTool } from "./tools/tumblr-tools/get-blog-info.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as {
@@ -137,6 +166,12 @@ async function main() {
 	await checkPlatform("Mastodon", getMastodonService);
 	await checkPlatform("Medium", getMediumService);
 	await checkPlatform("Pinterest", getPinterestService);
+	await checkPlatform("Dev.to", getDevToService);
+	await checkPlatform("Hashnode", getHashnodeService);
+	await checkPlatform("Beehiiv", getBeehiivService);
+	await checkPlatform("Ghost", getGhostService);
+	await checkPlatform("Twitch", getTwitchService);
+	await checkPlatform("Tumblr", getTumblrService);
 	await checkPlatform("Email", async () => {
 		const service = getEmailService();
 		await service.verify();
@@ -254,6 +289,41 @@ async function main() {
 	// Email
 	server.addTool(sendEmailTool);
 	server.addTool(sendBulkEmailTool);
+
+	// Dev.to
+	server.addTool(devtoCreateArticleTool);
+	server.addTool(devtoGetArticlesTool);
+	server.addTool(devtoGetArticleTool);
+	server.addTool(devtoUpdateArticleTool);
+
+	// Hashnode
+	server.addTool(hashnodeCreatePostTool);
+	server.addTool(hashnodeGetPostsTool);
+	server.addTool(hashnodeGetPublicationTool);
+
+	// Beehiiv
+	server.addTool(beehiivCreatePostTool);
+	server.addTool(beehiivGetPostsTool);
+	server.addTool(beehiivGetSubscribersTool);
+
+	// Ghost
+	server.addTool(ghostCreatePostTool);
+	server.addTool(ghostGetPostsTool);
+	server.addTool(ghostUpdatePostTool);
+	server.addTool(ghostDeletePostTool);
+
+	// Twitch
+	server.addTool(twitchGetUserTool);
+	server.addTool(twitchGetStreamsTool);
+	server.addTool(twitchGetChannelInfoTool);
+	server.addTool(twitchSearchChannelsTool);
+	server.addTool(twitchSendChatMessageTool);
+
+	// Tumblr
+	server.addTool(tumblrGetBlogInfoTool);
+	server.addTool(tumblrCreatePostTool);
+	server.addTool(tumblrGetPostsTool);
+	server.addTool(tumblrDeletePostTool);
 
 	try {
 		await server.start({ transportType: "stdio" });
