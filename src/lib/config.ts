@@ -57,6 +57,10 @@ export const config = {
 		baseUrl: "https://api.pinterest.com/v5",
 		accessToken: process.env.PINTEREST_ACCESS_TOKEN || "",
 	},
+	medium: {
+		baseUrl: "https://api.medium.com/v1",
+		accessToken: process.env.MEDIUM_ACCESS_TOKEN || "",
+	},
 	email: {
 		mailer: process.env.MAIL_MAILER || "smtp",
 		fromAddress: process.env.MAIL_FROM_ADDRESS || "",

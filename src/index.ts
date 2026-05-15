@@ -9,6 +9,7 @@ import { getFacebookService } from "./services/facebook-service.js";
 import { getInstagramService } from "./services/instagram-service.js";
 import { getLinkedInService } from "./services/linkedin-service.js";
 import { getMastodonService } from "./services/mastodon-service.js";
+import { getMediumService } from "./services/medium-service.js";
 import { getPinterestService } from "./services/pinterest-service.js";
 import { getRedditService } from "./services/reddit-service.js";
 import { getSlackService } from "./services/slack-service.js";
@@ -46,6 +47,8 @@ import { favouritePostTool as mastodonFavouritePostTool } from "./tools/mastodon
 import { getProfileTool as mastodonGetProfileTool } from "./tools/mastodon-tools/get-profile.js";
 import { replyToPostTool as mastodonReplyToPostTool } from "./tools/mastodon-tools/reply-to-post.js";
 import { searchPostsTool as mastodonSearchPostsTool } from "./tools/mastodon-tools/search-posts.js";
+import { createPostTool as mediumCreatePostTool } from "./tools/medium-tools/create-post.js";
+import { getUserTool as mediumGetUserTool } from "./tools/medium-tools/get-user.js";
 import { createBoardTool as pinterestCreateBoardTool } from "./tools/pinterest-tools/create-board.js";
 import { createPinTool as pinterestCreatePinTool } from "./tools/pinterest-tools/create-pin.js";
 import { deletePinTool as pinterestDeletePinTool } from "./tools/pinterest-tools/delete-pin.js";
@@ -132,6 +135,7 @@ async function main() {
 	await checkPlatform("YouTube", getYouTubeService);
 	await checkPlatform("Bluesky", getBlueskyService);
 	await checkPlatform("Mastodon", getMastodonService);
+	await checkPlatform("Medium", getMediumService);
 	await checkPlatform("Pinterest", getPinterestService);
 	await checkPlatform("Email", async () => {
 		const service = getEmailService();
@@ -234,6 +238,10 @@ async function main() {
 	server.addTool(mastodonFavouritePostTool);
 	server.addTool(mastodonGetProfileTool);
 	server.addTool(mastodonSearchPostsTool);
+
+	// Medium
+	server.addTool(mediumGetUserTool);
+	server.addTool(mediumCreatePostTool);
 
 	// Pinterest
 	server.addTool(pinterestGetBoardsTool);

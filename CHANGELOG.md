@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.1.0
+
+### Minor Changes
+
+- Added Medium tools: get user profile, publish Markdown article (public/draft/unlisted, up to 5 tags, canonical URL support)
+
 ## 2.0.0
 
 ### Major Changes

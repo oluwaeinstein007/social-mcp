@@ -21,6 +21,7 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | TikTok    | Query creator info, get user info, post video, photo post, get post status                                             |
 | YouTube   | Get channel info, search videos, get video info, list channel videos, get comments, post comment, update video         |
 | Pinterest | Get boards, create board, create pin, get pin, get board pins, delete pin                                              |
+| Medium    | Get user profile, publish article (Markdown, up to 5 tags, public/draft/unlisted)                                      |
 | Email     | Send email, send bulk email (drivers: SMTP, SendGrid, Mailgun)                                                         |
 
 ## Quick Start
@@ -213,6 +214,12 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PINTEREST_ACCESS_TOKEN`  | OAuth 2.0 Bearer token from the [Pinterest Developer Portal](https://developers.pinterest.com) — requires `boards:read boards:write pins:read pins:write` scopes |
 
+### Medium
+
+| Variable               | Description                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MEDIUM_ACCESS_TOKEN`  | Integration token from [Medium Settings](https://medium.com/me/settings) → Security and apps → Integration tokens → Get integration token    |
+
 ### Email
 
 Email uses a Laravel-style driver system. **Env vars are optional** — credentials can also be passed inline per tool call (see [Per-org / Multi-account Usage](#per-org--multi-account-usage)).
@@ -379,6 +386,13 @@ Set `MAIL_MAILER` to select your provider and only configure the variables for t
 - **PINTEREST_GET_PIN** — Get details of a specific pin (`pinId`)
 - **PINTEREST_GET_BOARD_PINS** — List all pins on a board (`boardId`, `pageSize`)
 - **PINTEREST_DELETE_PIN** — Delete a pin by ID (`pinId`)
+
+### Medium
+
+- **MEDIUM_GET_USER** — Get your Medium profile and user ID (required for publishing)
+- **MEDIUM_CREATE_POST** — Publish a Markdown article (`authorId`, `title`, `content`, `tags` up to 5, `publishStatus`, `canonicalUrl`)
+
+> **Note:** Medium Integration tokens are permanent and do not expire. Articles are published under your personal profile. To get your `authorId`, call `MEDIUM_GET_USER` first. The `canonicalUrl` field is useful for cross-posting from your own blog.
 
 ### Email
 

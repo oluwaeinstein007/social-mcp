@@ -230,3 +230,66 @@ describe("DELETE_LINKEDIN_POST param schema", () => {
 		expect(() => linkedInDeletePostParams.parse({ ugcPostUrn: "" })).toThrow();
 	});
 });
+
+const mediumCreatePostParams = z.object({
+	authorId: z.string().min(1),
+	title: z.string().min(1).max(255),
+	content: z.string().min(1),
+	tags: z.array(z.string()).max(5).optional(),
+	publishStatus: z.enum(["public", "draft", "unlisted"]).optional().default("public"),
+	canonicalUrl: z.string().url().optional(),
+	accessToken: z.string().optional(),
+});
+
+describe("MEDIUM_CREATE_POST param schema", () => {
+	it("accepts valid params with default publishStatus", () => {
+		const parsed = mediumCreatePostParams.parse({
+			authorId: "abc123",
+			title: "My Article",
+			content: "# Hello\n\nWorld",
+		});
+		expect(parsed.publishStatus).toBe("public");
+	});
+
+	it("accepts draft publishStatus", () => {
+		const parsed = mediumCreatePostParams.parse({
+			authorId: "abc123",
+			title: "Draft",
+			content: "Body text",
+			publishStatus: "draft",
+		});
+		expect(parsed.publishStatus).toBe("draft");
+	});
+
+	it("rejects more than 5 tags", () => {
+		expect(() =>
+			mediumCreatePostParams.parse({
+				authorId: "abc123",
+				title: "Title",
+				content: "Body",
+				tags: ["a", "b", "c", "d", "e", "f"],
+			}),
+		).toThrow();
+	});
+
+	it("rejects invalid canonicalUrl", () => {
+		expect(() =>
+			mediumCreatePostParams.parse({
+				authorId: "abc123",
+				title: "Title",
+				content: "Body",
+				canonicalUrl: "not-a-url",
+			}),
+		).toThrow();
+	});
+
+	it("rejects empty title", () => {
+		expect(() =>
+			mediumCreatePostParams.parse({
+				authorId: "abc123",
+				title: "",
+				content: "Body",
+			}),
+		).toThrow();
+	});
+});
