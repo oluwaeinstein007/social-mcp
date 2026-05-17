@@ -22,7 +22,7 @@ An MCP (Model Context Protocol) server that lets AI assistants post and interact
 | YouTube   | Get channel info, search videos, get video info, list channel videos, get comments, post comment, update video         |
 | Pinterest | Get boards, create board, create pin, get pin, get board pins, delete pin                                              |
 | Medium    | Get user profile, publish article (Markdown, up to 5 tags, public/draft/unlisted)                                      |
-| Email     | Send email, send bulk email (drivers: SMTP, SendGrid, Mailgun)                                                         |
+| Email     | Send email, send bulk email (drivers: SMTP, SendGrid, Mailgun, Amazon SES)                                             |
 | Dev.to    | Create article, get my articles, get article by ID, update article                                                     |
 | Hashnode  | Create post, get posts, get publication info                                                                            |
 | Beehiiv   | Create newsletter post, get posts, get subscribers                                                                     |
@@ -91,6 +91,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "MAIL_USERNAME": "you@gmail.com",
         "MAIL_PASSWORD": "your_password",
         "MAIL_ENCRYPTION": "tls",
+        "SES_ACCESS_KEY_ID": "your_access_key_id",
+        "SES_SECRET_ACCESS_KEY": "your_secret_access_key",
+        "SES_REGION": "us-east-1",
         "DEVTO_API_KEY": "your_api_key",
         "HASHNODE_ACCESS_TOKEN": "your_token",
         "HASHNODE_PUBLICATION_ID": "your_publication_id",
@@ -284,7 +287,7 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 
 Email uses a Laravel-style driver system. **Env vars are optional** — credentials can also be passed inline per tool call (see [Per-org / Multi-account Usage](#per-org--multi-account-usage)).
 
-Set `MAIL_MAILER` to select your provider and only configure the variables for the driver you choose.
+Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `ses`) and only configure the variables for the driver you choose.
 
 | Variable             | Description                                                            |
 | -------------------- | ---------------------------------------------------------------------- |
@@ -316,6 +319,16 @@ Set `MAIL_MAILER` to select your provider and only configure the variables for t
 | ----------------- | -------------------------------------------------------------------------------------------- |
 | `MAILGUN_API_KEY` | API key from [Mailgun account settings](https://app.mailgun.com/app/account/security/api_keys) |
 | `MAILGUN_DOMAIN`  | Your Mailgun sending domain (e.g. `mg.yourdomain.com`)                                       |
+
+**Amazon SES** (`MAIL_MAILER=ses`)
+
+| Variable               | Description                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SES_ACCESS_KEY_ID`    | AWS IAM Access Key ID — the IAM user must have `ses:SendEmail` permission                                                                     |
+| `SES_SECRET_ACCESS_KEY`| AWS IAM Secret Access Key                                                                                                                     |
+| `SES_REGION`           | AWS region where your SES sending identity is verified (default: `us-east-1`)                                                                 |
+
+> **Note:** The sender address (`MAIL_FROM_ADDRESS`) must be a verified identity in your SES account. Sending uses the SES v2 REST API with AWS Signature V4 — no AWS SDK required.
 
 ## Available Tools
 

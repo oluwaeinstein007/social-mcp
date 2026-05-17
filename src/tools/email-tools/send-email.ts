@@ -8,7 +8,7 @@ import {
 const sendEmailParams = z.object({
 	// ── Inline credentials (all optional — omit to use env var config) ──────
 	mailer: z
-		.enum(["smtp", "sendgrid", "mailgun"])
+		.enum(["smtp", "sendgrid", "mailgun", "ses"])
 		.optional()
 		.describe(
 			"Mail driver. Required when not configured via env vars (MAIL_MAILER).",
@@ -54,6 +54,19 @@ const sendEmailParams = z.object({
 		.string()
 		.optional()
 		.describe("Mailgun sending domain. Required when mailer=mailgun."),
+	// Amazon SES
+	sesAccessKeyId: z
+		.string()
+		.optional()
+		.describe("AWS IAM Access Key ID. Required when mailer=ses."),
+	sesSecretAccessKey: z
+		.string()
+		.optional()
+		.describe("AWS IAM Secret Access Key. Required when mailer=ses."),
+	sesRegion: z
+		.string()
+		.optional()
+		.describe("AWS region for SES (default us-east-1). Used when mailer=ses."),
 
 	// ── Message ──────────────────────────────────────────────────────────────
 	to: z.string().email().describe("Recipient email address."),
@@ -88,6 +101,9 @@ export const sendEmailTool = {
 							sendgridApiKey: params.sendgridApiKey,
 							mailgunApiKey: params.mailgunApiKey,
 							mailgunDomain: params.mailgunDomain,
+							sesAccessKeyId: params.sesAccessKeyId,
+							sesSecretAccessKey: params.sesSecretAccessKey,
+							sesRegion: params.sesRegion,
 						})
 					: getEmailService();
 

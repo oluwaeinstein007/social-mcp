@@ -108,5 +108,10 @@ export const config = {
 			apiKey: process.env.MAILGUN_API_KEY || "",
 			domain: process.env.MAILGUN_DOMAIN || "",
 		},
+		ses: {
+			accessKeyId: process.env.SES_ACCESS_KEY_ID || "",
+			secretAccessKey: process.env.SES_SECRET_ACCESS_KEY || "",
+			region: process.env.SES_REGION || "us-east-1",
+		},
 	},
 };

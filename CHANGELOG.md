@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.3.0
+
+### Minor Changes
+
+- Added Amazon SES driver to EmailService — sends via SES v2 REST API with AWS Signature V4 (no extra dependencies); accepts `SES_ACCESS_KEY_ID`, `SES_SECRET_ACCESS_KEY`, `SES_REGION` env vars or inline credentials per call
+
 ## 2.2.0
 
 ### Minor Changes

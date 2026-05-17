@@ -1,9 +1,10 @@
 import nodemailer from "nodemailer";
+import { createHash, createHmac } from "crypto";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 
 export interface EmailCredentials {
-	mailer: "smtp" | "sendgrid" | "mailgun";
+	mailer: "smtp" | "sendgrid" | "mailgun" | "ses";
 	fromAddress: string;
 	fromName?: string;
 	smtpHost?: string;
@@ -14,13 +15,16 @@ export interface EmailCredentials {
 	sendgridApiKey?: string;
 	mailgunApiKey?: string;
 	mailgunDomain?: string;
+	sesAccessKeyId?: string;
+	sesSecretAccessKey?: string;
+	sesRegion?: string;
 }
 
 function credentialsFromConfig(): EmailCredentials {
-	const { mailer, fromAddress, fromName, smtp, sendgrid, mailgun } =
+	const { mailer, fromAddress, fromName, smtp, sendgrid, mailgun, ses } =
 		config.email;
 	return {
-		mailer: mailer as "smtp" | "sendgrid" | "mailgun",
+		mailer: mailer as "smtp" | "sendgrid" | "mailgun" | "ses",
 		fromAddress,
 		fromName: fromName || undefined,
 		smtpHost: smtp.host,
@@ -31,7 +35,27 @@ function credentialsFromConfig(): EmailCredentials {
 		sendgridApiKey: sendgrid.apiKey || undefined,
 		mailgunApiKey: mailgun.apiKey || undefined,
 		mailgunDomain: mailgun.domain || undefined,
+		sesAccessKeyId: ses.accessKeyId || undefined,
+		sesSecretAccessKey: ses.secretAccessKey || undefined,
+		sesRegion: ses.region || undefined,
 	};
+}
+
+// ── AWS Sig V4 helpers ────────────────────────────────────────────────────────
+
+function sha256Hex(data: string): string {
+	return createHash("sha256").update(data, "utf8").digest("hex");
+}
+
+function hmacSha256(key: Buffer | string, data: string): Buffer {
+	return createHmac("sha256", key).update(data, "utf8").digest();
+}
+
+function sesSigningKey(secretKey: string, dateStamp: string, region: string): Buffer {
+	const kDate = hmacSha256(`AWS4${secretKey}`, dateStamp);
+	const kRegion = hmacSha256(kDate, region);
+	const kService = hmacSha256(kRegion, "ses");
+	return hmacSha256(kService, "aws4_request");
 }
 
 export class EmailService {
@@ -52,6 +76,8 @@ export class EmailService {
 			sendgridApiKey,
 			mailgunApiKey,
 			mailgunDomain,
+			sesAccessKeyId,
+			sesSecretAccessKey,
 		} = this.creds;
 
 		if (!fromAddress) {
@@ -77,9 +103,16 @@ export class EmailService {
 					"MAILGUN_DOMAIN",
 				]);
 			}
+		} else if (mailer === "ses") {
+			if (!sesAccessKeyId || !sesSecretAccessKey) {
+				throw new CredentialsError("Email (Amazon SES)", [
+					"SES_ACCESS_KEY_ID",
+					"SES_SECRET_ACCESS_KEY",
+				]);
+			}
 		} else {
 			throw new Error(
-				`Unsupported mailer: "${mailer}". Supported: smtp, sendgrid, mailgun`,
+				`Unsupported mailer: "${mailer}". Supported: smtp, sendgrid, mailgun, ses`,
 			);
 		}
 	}
@@ -101,7 +134,7 @@ export class EmailService {
 		});
 	}
 
-	// Verifies the SMTP connection. No-op for SendGrid/Mailgun (no free verify endpoint).
+	// Verifies the SMTP connection. No-op for SendGrid/Mailgun/SES (no free verify endpoint).
 	async verify(): Promise<void> {
 		if (this.creds.mailer === "smtp") {
 			const transporter = this.createSMTPTransporter();
@@ -122,6 +155,8 @@ export class EmailService {
 				return this.sendViaSendGrid(to, subject, text, html);
 			case "mailgun":
 				return this.sendViaMailgun(to, subject, text, html);
+			case "ses":
+				return this.sendViaSES(to, subject, text, html);
 		}
 	}
 
@@ -207,6 +242,61 @@ export class EmailService {
 		if (!response.ok) {
 			const error = await response.text();
 			throw new Error(`Mailgun error (${response.status}): ${error}`);
+		}
+	}
+
+	private async sendViaSES(
+		to: string | string[],
+		subject: string,
+		text: string,
+		html?: string,
+	) {
+		const { sesAccessKeyId, sesSecretAccessKey = "", sesRegion = "us-east-1", fromAddress, fromName } = this.creds;
+		const region = sesRegion;
+		const host = `email.${region}.amazonaws.com`;
+		const path = "/v2/email/outbound-emails";
+
+		const toAddresses = Array.isArray(to) ? to : [to];
+		const body = JSON.stringify({
+			FromEmailAddress: fromName ? `"${fromName}" <${fromAddress}>` : fromAddress,
+			Destination: { ToAddresses: toAddresses },
+			Content: {
+				Simple: {
+					Subject: { Data: subject, Charset: "UTF-8" },
+					Body: {
+						Text: { Data: text, Charset: "UTF-8" },
+						...(html ? { Html: { Data: html, Charset: "UTF-8" } } : {}),
+					},
+				},
+			},
+		});
+
+		const now = new Date();
+		const amzDate = now.toISOString().replace(/[:-]/g, "").replace(/\.\d{3}/, "");
+		const dateStamp = amzDate.slice(0, 8);
+		const bodyHash = sha256Hex(body);
+		const canonicalHeaders = `content-type:application/json\nhost:${host}\nx-amz-date:${amzDate}\n`;
+		const signedHeaders = "content-type;host;x-amz-date";
+		const canonicalRequest = ["POST", path, "", canonicalHeaders, signedHeaders, bodyHash].join("\n");
+		const credentialScope = `${dateStamp}/${region}/ses/aws4_request`;
+		const stringToSign = ["AWS4-HMAC-SHA256", amzDate, credentialScope, sha256Hex(canonicalRequest)].join("\n");
+		const signingKey = sesSigningKey(sesSecretAccessKey, dateStamp, region);
+		const signature = createHmac("sha256", signingKey).update(stringToSign, "utf8").digest("hex");
+		const authorization = `AWS4-HMAC-SHA256 Credential=${sesAccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+		const response = await fetch(`https://${host}${path}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-Amz-Date": amzDate,
+				Authorization: authorization,
+			},
+			body,
+		});
+
+		if (!response.ok) {
+			const error = await response.text();
+			throw new Error(`SES error (${response.status}): ${error}`);
 		}
 	}
 }
