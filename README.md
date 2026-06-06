@@ -63,6 +63,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
         "TWITTER_APP_SECRET": "your_secret",
         "TWITTER_ACCESS_TOKEN": "your_token",
         "TWITTER_ACCESS_SECRET": "your_secret",
+        "TWITTER_BACKEND": "twitter",
+        "XQUIK_API_KEY": "your_xquik_key",
         "DISCORD_BOT_TOKEN": "your_token",
         "WHATSAPP_ACCESS_TOKEN": "your_token",
         "WHATSAPP_PHONE_NUMBER_ID": "your_id",
@@ -148,6 +150,13 @@ Copy `example.env` to `.env` and fill in the credentials for the platforms you w
 | `TWITTER_APP_SECRET`    | API secret                                                                 |
 | `TWITTER_ACCESS_TOKEN`  | Access token (OAuth 1.0a, Read & Write)                                    |
 | `TWITTER_ACCESS_SECRET` | Access token secret                                                        |
+| `TWITTER_BACKEND`       | Optional. Set to `xquik` to use Xquik for search tweets and get user info  |
+| `XQUIK_API_KEY`         | Required when `TWITTER_BACKEND=xquik`. Sent as an `x-api-key` header       |
+| `XQUIK_BASE_URL`        | Optional Xquik API base URL. Defaults to `https://xquik.com/api/v1`        |
+
+When `TWITTER_BACKEND=xquik`, only `SEARCH_TWEETS` and `GET_TWITTER_USER_INFO`
+use Xquik. Tweet posting, replies, likes, and deletion still use the native
+Twitter/X credentials above.
 
 ### Discord
 
