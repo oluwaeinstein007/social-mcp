@@ -11,6 +11,7 @@ const TWITTER_KEYS = [
 	"TWITTER_BACKEND",
 	"XQUIK_API_KEY",
 	"XQUIK_BASE_URL",
+	"XQUIK_TIMEOUT_MS",
 ];
 
 function saveEnv(keys: string[]) {
@@ -102,7 +103,66 @@ describe("TwitterService credential validation", () => {
 		expect(user.public_metrics?.followers_count).toBe(100);
 		expect(fetch).toHaveBeenCalledWith(
 			new URL("https://xquik.test/api/v1/x/users/search?q=xquikcom"),
-			{ headers: { "x-api-key": "test-key" } },
+			expect.objectContaining({
+				headers: { "x-api-key": "test-key" },
+				signal: expect.any(AbortSignal),
+			}),
+		);
+	});
+
+	it("rejects Xquik user search when no exact username matches", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		process.env.XQUIK_BASE_URL = "https://xquik.test/api/v1";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(
+					JSON.stringify({
+						users: [
+							{
+								id: "43",
+								username: "differentuser",
+								name: "Different User",
+							},
+						],
+					}),
+					{ status: 200 },
+				);
+			}),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+
+		await expect(
+			new TwitterService().getUserInfo("expectedUsername"),
+		).rejects.toThrow("Failed to get user info: No Twitter/X user found");
+		expect(fetch).toHaveBeenCalledWith(
+			new URL("https://xquik.test/api/v1/x/users/search?q=expectedUsername"),
+			expect.objectContaining({
+				headers: { "x-api-key": "test-key" },
+				signal: expect.any(AbortSignal),
+			}),
+		);
+	});
+
+	it("wraps aborted Xquik requests as timeout errors", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		process.env.XQUIK_TIMEOUT_MS = "500";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new DOMException("The operation was aborted.", "AbortError");
+			}),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+
+		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
+			"Failed to get user info: Xquik API timeout after 500ms",
 		);
 	});
 

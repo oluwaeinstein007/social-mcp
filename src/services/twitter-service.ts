@@ -9,6 +9,7 @@ export interface TwitterCredentials {
 }
 
 type TwitterBackend = "twitter" | "xquik";
+const DEFAULT_XQUIK_TIMEOUT_MS = 10_000;
 
 interface XquikSearchTweet {
 	id: string;
@@ -83,12 +84,28 @@ export class TwitterService {
 			url.searchParams.set(key, value);
 		}
 
-		const response = await fetch(url, {
-			headers: {
-				"x-api-key": getXquikApiKey(),
-			},
-		});
-		const text = await response.text();
+		const timeoutMs = getXquikTimeoutMs();
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), timeoutMs);
+		let text: string;
+		let response: Response;
+
+		try {
+			response = await fetch(url, {
+				headers: {
+					"x-api-key": getXquikApiKey(),
+				},
+				signal: controller.signal,
+			});
+			text = await response.text();
+		} catch (error) {
+			if (isAbortError(error)) {
+				throw new Error(`Xquik API timeout after ${timeoutMs}ms`);
+			}
+			throw error;
+		} finally {
+			clearTimeout(timeout);
+		}
 		const data = parseJson(text);
 
 		if (!response.ok) {
@@ -106,10 +123,9 @@ export class TwitterService {
 			{ q: username },
 		);
 		const users = data.users ?? [];
-		const user =
-			users.find(
-				(item) => item.username?.toLowerCase() === username.toLowerCase(),
-			) ?? users[0];
+		const user = users.find(
+			(item) => item.username?.toLowerCase() === username.toLowerCase(),
+		);
 
 		if (!user) {
 			throw new Error(`No Twitter/X user found for ${username}`);
@@ -307,6 +323,20 @@ function getXquikApiKey(): string {
 	return apiKey;
 }
 
+function getXquikTimeoutMs(): number {
+	const rawTimeout = process.env.XQUIK_TIMEOUT_MS;
+	if (!rawTimeout) {
+		return DEFAULT_XQUIK_TIMEOUT_MS;
+	}
+
+	const timeout = Number(rawTimeout);
+	if (!Number.isFinite(timeout) || timeout <= 0) {
+		return DEFAULT_XQUIK_TIMEOUT_MS;
+	}
+
+	return timeout;
+}
+
 function parseJson(text: string): unknown {
 	if (!text) {
 		return {};
@@ -336,6 +366,10 @@ function errorMessage(data: unknown, fallback: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
+}
+
+function isAbortError(error: unknown): boolean {
+	return error instanceof DOMException && error.name === "AbortError";
 }
 
 let _instance: TwitterService | undefined;
