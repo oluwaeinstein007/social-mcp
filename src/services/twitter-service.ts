@@ -27,9 +27,9 @@ interface XquikSearchTweet {
 }
 
 interface XquikUserProfile {
-	id: string;
-	username: string;
-	name: string;
+	id?: string;
+	username?: string;
+	name?: string;
 	description?: string;
 	followers?: number;
 	following?: number;
@@ -85,8 +85,7 @@ export class TwitterService {
 		}
 
 		const timeoutMs = getXquikTimeoutMs();
-		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), timeoutMs);
+		const signal = AbortSignal.timeout(timeoutMs);
 		let text: string;
 		let response: Response;
 
@@ -95,7 +94,7 @@ export class TwitterService {
 				headers: {
 					"x-api-key": getXquikApiKey(),
 				},
-				signal: controller.signal,
+				signal,
 			});
 			text = await response.text();
 		} catch (error) {
@@ -103,8 +102,6 @@ export class TwitterService {
 				throw new Error(`Xquik API timeout after ${timeoutMs}ms`);
 			}
 			throw error;
-		} finally {
-			clearTimeout(timeout);
 		}
 		const data = parseJson(text);
 
@@ -123,17 +120,27 @@ export class TwitterService {
 			{ q: username },
 		);
 		const users = data.users ?? [];
-		const user = users.find(
-			(item) => item.username?.toLowerCase() === username.toLowerCase(),
-		);
+		const normalizedUsername = username.toLowerCase();
+		const user = users.find((item) => {
+			if (typeof item.username !== "string") {
+				return false;
+			}
+			return item.username.toLowerCase() === normalizedUsername;
+		});
 
-		if (!user) {
+		if (
+			!user ||
+			typeof user.id !== "string" ||
+			typeof user.username !== "string"
+		) {
 			throw new Error(`No Twitter/X user found for ${username}`);
 		}
 
+		const name = typeof user.name === "string" ? user.name : user.username;
+
 		return {
 			id: user.id,
-			name: user.name,
+			name,
 			username: user.username,
 			description: user.description,
 			verified: user.verified,
@@ -350,18 +357,26 @@ function parseJson(text: string): unknown {
 
 function errorMessage(data: unknown, fallback: string): string {
 	if (isRecord(data)) {
-		const error = data.error;
-		if (typeof error === "string") {
-			return error;
-		}
-		if (isRecord(error) && typeof error.message === "string") {
-			return error.message;
-		}
-		if (typeof data.message === "string") {
-			return data.message;
-		}
+		const error = stringFromUnknown(data.error);
+		if (error) return error;
+
+		const message = stringFromUnknown(data.message);
+		if (message) return message;
 	}
 	return fallback || "Unknown error";
+}
+
+function stringFromUnknown(value: unknown): string | undefined {
+	if (typeof value === "string") return value;
+	if (!isRecord(value)) return undefined;
+
+	const error = stringFromUnknown(value.error);
+	if (error) return error;
+
+	const message = stringFromUnknown(value.message);
+	if (message) return message;
+
+	return undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -369,7 +384,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isAbortError(error: unknown): boolean {
-	return error instanceof DOMException && error.name === "AbortError";
+	return (
+		error instanceof DOMException &&
+		(error.name === "AbortError" || error.name === "TimeoutError")
+	);
 }
 
 let _instance: TwitterService | undefined;

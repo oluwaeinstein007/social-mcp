@@ -147,6 +147,35 @@ describe("TwitterService credential validation", () => {
 		);
 	});
 
+	it("rejects malformed Xquik user search entries", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		process.env.XQUIK_BASE_URL = "https://xquik.test/api/v1";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(
+					JSON.stringify({
+						users: [
+							{
+								id: "43",
+								name: "Missing Username",
+							},
+						],
+					}),
+					{ status: 200 },
+				);
+			}),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+
+		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
+			"Failed to get user info: No Twitter/X user found",
+		);
+	});
+
 	it("wraps aborted Xquik requests as timeout errors", async () => {
 		clearEnv(TWITTER_KEYS);
 		process.env.TWITTER_BACKEND = "xquik";
@@ -163,6 +192,31 @@ describe("TwitterService credential validation", () => {
 
 		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
 			"Failed to get user info: Xquik API timeout after 500ms",
+		);
+	});
+
+	it("reads nested Xquik error messages", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				return new Response(
+					JSON.stringify({
+						error: {
+							message: "Search temporarily unavailable",
+						},
+					}),
+					{ status: 503 },
+				);
+			}),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+
+		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
+			"Failed to get user info: Xquik API error (HTTP 503): Search temporarily unavailable",
 		);
 	});
 
