@@ -251,6 +251,15 @@ describe("TwitterService credential validation", () => {
 		expect(result.tweets[0]?.public_metrics.like_count).toBe(9);
 		expect(result.meta.result_count).toBe(1);
 		expect(result.meta.next_token).toBe("next");
+		expect(fetch).toHaveBeenCalledWith(
+			new URL(
+				"https://xquik.com/api/v1/x/tweets/search?q=MCP&queryType=Latest&limit=10",
+			),
+			expect.objectContaining({
+				headers: { "x-api-key": "test-key" },
+				signal: expect.any(AbortSignal),
+			}),
+		);
 	});
 });
 
