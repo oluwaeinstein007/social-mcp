@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import {
-	EmailService,
-	getEmailService,
-} from "../../services/email-service.js";
+import { EmailService, getEmailService } from "../../services/email-service.js";
 
 const sendBulkEmailParams = z.object({
 	// ── Inline credentials (all optional — omit to use env var config) ──────
@@ -17,7 +14,9 @@ const sendBulkEmailParams = z.object({
 		.string()
 		.email()
 		.optional()
-		.describe("Sender email address. Required when passing inline credentials."),
+		.describe(
+			"Sender email address. Required when passing inline credentials.",
+		),
 	fromName: z.string().optional().describe("Sender display name."),
 	// SMTP
 	smtpHost: z
@@ -79,6 +78,36 @@ const sendBulkEmailParams = z.object({
 		.string()
 		.optional()
 		.describe("Optional HTML body. Falls back to text if omitted."),
+	cc: z
+		.union([z.string().email(), z.array(z.string().email())])
+		.optional()
+		.describe(
+			"Cc recipient(s). With mailer=sendgrid each recipient gets a separate message, so Cc receives one copy per recipient; with other mailers all recipients share one message and Cc receives it once.",
+		),
+	bcc: z
+		.union([z.string().email(), z.array(z.string().email())])
+		.optional()
+		.describe(
+			"Bcc recipient(s). With mailer=sendgrid each recipient gets a separate message, so Bcc receives one copy per recipient; with other mailers all recipients share one message and Bcc receives it once.",
+		),
+	replyTo: z.string().email().optional().describe("Reply-To address."),
+	headers: z
+		.record(z.string(), z.string())
+		.optional()
+		.describe('Custom email headers, e.g. { "X-Campaign-Id": "123" }.'),
+	attachments: z
+		.array(
+			z.object({
+				filename: z.string().describe("Attachment file name."),
+				content: z.string().describe("Base64-encoded file contents."),
+				contentType: z
+					.string()
+					.optional()
+					.describe("MIME type, e.g. application/pdf."),
+			}),
+		)
+		.optional()
+		.describe("File attachments."),
 });
 
 type SendBulkEmailParams = z.infer<typeof sendBulkEmailParams>;
@@ -110,12 +139,17 @@ export const sendBulkEmailTool = {
 						})
 					: getEmailService();
 
-			await service.send(
-				params.recipients,
-				params.subject,
-				params.text,
-				params.html,
-			);
+			await service.send({
+				to: params.recipients,
+				subject: params.subject,
+				text: params.text,
+				html: params.html,
+				cc: params.cc,
+				bcc: params.bcc,
+				replyTo: params.replyTo,
+				headers: params.headers,
+				attachments: params.attachments,
+			});
 			return `Email sent successfully to ${params.recipients.length} recipient(s): ${params.recipients.join(", ")}.`;
 		} catch (error) {
 			if (error instanceof CredentialsError) return `Error: ${error.message}`;

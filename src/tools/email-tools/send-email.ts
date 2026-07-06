@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import {
-	EmailService,
-	getEmailService,
-} from "../../services/email-service.js";
+import { EmailService, getEmailService } from "../../services/email-service.js";
 
 const sendEmailParams = z.object({
 	// ── Inline credentials (all optional — omit to use env var config) ──────
@@ -17,7 +14,9 @@ const sendEmailParams = z.object({
 		.string()
 		.email()
 		.optional()
-		.describe("Sender email address. Required when passing inline credentials."),
+		.describe(
+			"Sender email address. Required when passing inline credentials.",
+		),
 	fromName: z.string().optional().describe("Sender display name."),
 	// SMTP
 	smtpHost: z
@@ -76,6 +75,32 @@ const sendEmailParams = z.object({
 		.string()
 		.optional()
 		.describe("Optional HTML body. Falls back to text if omitted."),
+	cc: z
+		.union([z.string().email(), z.array(z.string().email())])
+		.optional()
+		.describe("Cc recipient(s)."),
+	bcc: z
+		.union([z.string().email(), z.array(z.string().email())])
+		.optional()
+		.describe("Bcc recipient(s)."),
+	replyTo: z.string().email().optional().describe("Reply-To address."),
+	headers: z
+		.record(z.string(), z.string())
+		.optional()
+		.describe('Custom email headers, e.g. { "X-Campaign-Id": "123" }.'),
+	attachments: z
+		.array(
+			z.object({
+				filename: z.string().describe("Attachment file name."),
+				content: z.string().describe("Base64-encoded file contents."),
+				contentType: z
+					.string()
+					.optional()
+					.describe("MIME type, e.g. application/pdf."),
+			}),
+		)
+		.optional()
+		.describe("File attachments."),
 });
 
 type SendEmailParams = z.infer<typeof sendEmailParams>;
@@ -107,7 +132,17 @@ export const sendEmailTool = {
 						})
 					: getEmailService();
 
-			await service.send(params.to, params.subject, params.text, params.html);
+			await service.send({
+				to: params.to,
+				subject: params.subject,
+				text: params.text,
+				html: params.html,
+				cc: params.cc,
+				bcc: params.bcc,
+				replyTo: params.replyTo,
+				headers: params.headers,
+				attachments: params.attachments,
+			});
 			return `Email sent successfully to ${params.to}.`;
 		} catch (error) {
 			if (error instanceof CredentialsError) return `Error: ${error.message}`;

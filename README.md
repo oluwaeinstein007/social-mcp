@@ -328,7 +328,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 | `SES_SECRET_ACCESS_KEY`| AWS IAM Secret Access Key                                                                                                                     |
 | `SES_REGION`           | AWS region where your SES sending identity is verified (default: `us-east-1`)                                                                 |
 
-> **Note:** The sender address (`MAIL_FROM_ADDRESS`) must be a verified identity in your SES account. Sending uses the SES v2 REST API with AWS Signature V4 — no AWS SDK required.
+> **Note:** The sender address (`MAIL_FROM_ADDRESS`) must be a verified identity in your SES account. Sending uses the SES v2 REST API with AWS Signature V4 — no AWS SDK required. On startup (and via `EmailService.verify()`), your keys are checked with a signed `GetAccount` call, the same way SMTP is checked with `transporter.verify()`. This only confirms the keys are valid — it does not report sandbox mode or sending quota; check those in the AWS console or via your own `GetAccount` call if you need them.
 
 ## Available Tools
 
@@ -469,10 +469,10 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 
 ### Email
 
-- **EMAIL_SEND** — Send an email to a single recipient (`to`, `subject`, `text`, `html`; plus optional inline credentials — see below)
-- **EMAIL_SEND_BULK** — Send the same email to multiple recipients (`recipients`, `subject`, `text`, `html`; plus optional inline credentials)
+- **EMAIL_SEND** — Send an email to a single recipient (`to`, `subject`, `text`, `html`, `cc`, `bcc`, `replyTo`, `headers`, `attachments`; plus optional inline credentials — see below)
+- **EMAIL_SEND_BULK** — Send the same email to multiple recipients (`recipients`, `subject`, `text`, `html`, `cc`, `bcc`, `replyTo`, `headers`, `attachments`; plus optional inline credentials)
 
-> The active mail driver is selected by `MAIL_MAILER`. Switching providers requires only changing that one variable — no code changes needed. Credentials can also be passed inline per call for multi-account / per-org use cases.
+> The active mail driver is selected by `MAIL_MAILER`. Switching providers requires only changing that one variable — no code changes needed. Credentials can also be passed inline per call for multi-account / per-org use cases. `attachments` take `{ filename, content, contentType? }` with `content` as base64; for SES this transparently switches to a raw MIME message since attachments aren't supported by the plain send API.
 
 ### Dev.to
 
