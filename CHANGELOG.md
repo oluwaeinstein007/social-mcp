@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.6.0
+
+### Minor Changes
+
+- Added optional `proxyUrl` support to `DiscordService`, `SlackService`, and `TelegramService` for per-account IP routing (see new "Proxy Support" README section). Added real media capability to all three: Discord's `sendMessage` now uploads real multipart attachments instead of only URL embeds and `getMessages` returns attachment filenames/URLs; Slack's `sendMessage` uploads files via `files.uploadV2`; Telegram gained `TELEGRAM_SEND_PHOTO`/`TELEGRAM_SEND_DOCUMENT` tools (URL or base64), automatically following up with the full caption as a reply when it exceeds Telegram's 1024-character caption limit.
+
 ## 2.5.0
 
 ### Minor Changes

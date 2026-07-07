@@ -1,8 +1,20 @@
 import { Telegraf } from "telegraf";
 import { CredentialsError } from "../lib/errors.js";
+import { createProxyAgent } from "../lib/proxy.js";
 
 export interface TelegramCredentials {
 	botToken: string;
+	/** Routes API calls through this proxy (e.g. per-tenant IP isolation). */
+	proxyUrl?: string;
+}
+
+// Telegram truncates/rejects captions over 1024 chars, so a photo/document with a
+// long caption is sent without one and followed by a plain text message instead —
+// otherwise the API call would fail outright rather than just dropping the caption.
+const MAX_CAPTION_LENGTH = 1024;
+
+function isHttpUrl(value: string): boolean {
+	return value.startsWith("http://") || value.startsWith("https://");
 }
 
 export interface ChannelInfo {
@@ -29,7 +41,75 @@ export class TelegramService {
 		if (!botToken) {
 			throw new CredentialsError("Telegram", ["TELEGRAM_BOT_TOKEN"]);
 		}
-		this.bot = new Telegraf(botToken);
+		const agent = createProxyAgent(credentials?.proxyUrl);
+		this.bot = new Telegraf(
+			botToken,
+			agent ? { telegram: { agent } } : undefined,
+		);
+	}
+
+	// Accepts a public URL or base64-encoded bytes. Splits into photo + follow-up
+	// message when the caption is too long instead of letting the API call fail.
+	async sendPhoto(
+		chatId: string | number,
+		photo: string,
+		filename?: string,
+		caption?: string,
+	): Promise<MessageInfo> {
+		try {
+			const source = isHttpUrl(photo)
+				? photo
+				: { source: Buffer.from(photo, "base64"), filename };
+			const fitsCaption = !caption || caption.length <= MAX_CAPTION_LENGTH;
+			const message = await this.bot.telegram.sendPhoto(chatId, source, {
+				caption: fitsCaption ? caption : undefined,
+			});
+			if (caption && !fitsCaption) {
+				await this.bot.telegram.sendMessage(chatId, caption, {
+					reply_parameters: { message_id: message.message_id },
+				});
+			}
+			return {
+				messageId: message.message_id,
+				chatId: message.chat.id,
+				date: message.date,
+			};
+		} catch (error) {
+			throw new Error(
+				`Failed to send photo: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	async sendDocument(
+		chatId: string | number,
+		document: string,
+		filename?: string,
+		caption?: string,
+	): Promise<MessageInfo> {
+		try {
+			const source = isHttpUrl(document)
+				? document
+				: { source: Buffer.from(document, "base64"), filename };
+			const fitsCaption = !caption || caption.length <= MAX_CAPTION_LENGTH;
+			const message = await this.bot.telegram.sendDocument(chatId, source, {
+				caption: fitsCaption ? caption : undefined,
+			});
+			if (caption && !fitsCaption) {
+				await this.bot.telegram.sendMessage(chatId, caption, {
+					reply_parameters: { message_id: message.message_id },
+				});
+			}
+			return {
+				messageId: message.message_id,
+				chatId: message.chat.id,
+				date: message.date,
+			};
+		} catch (error) {
+			throw new Error(
+				`Failed to send document: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
 	}
 
 	async sendMessage(

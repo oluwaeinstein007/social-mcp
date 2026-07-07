@@ -335,12 +335,16 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 ### Telegram
 
 - **TELEGRAM_SEND_MESSAGE** — Send a message to a chat or channel (`chatId`, `text`)
+- **TELEGRAM_SEND_PHOTO** — Send a photo from a public URL or base64 bytes (`chatId`, `photo`, `filename`, `caption`)
+- **TELEGRAM_SEND_DOCUMENT** — Send a file from a public URL or base64 bytes (`chatId`, `document`, `filename`, `caption`)
 - **TELEGRAM_GET_CHANNEL_INFO** — Get channel metadata (`channelId`)
 - **TELEGRAM_FORWARD_MESSAGE** — Forward a message between chats (`fromChatId`, `toChatId`, `messageId`)
 - **TELEGRAM_PIN_MESSAGE** — Pin a message in a chat (`chatId`, `messageId`)
 - **TELEGRAM_GET_CHANNEL_MEMBERS** — List channel administrators (`channelId`, `limit`)
 - **TELEGRAM_EDIT_MESSAGE** — Edit the text of a message (`chatId`, `messageId`, `text`)
 - **TELEGRAM_DELETE_MESSAGE** — Delete a message (`chatId`, `messageId`)
+
+> **Note:** Captions over 1024 characters (Telegram's limit) are automatically sent as a follow-up reply instead of failing the call.
 
 ### Twitter / X
 
@@ -353,8 +357,10 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 
 ### Discord
 
-- **SEND_DISCORD_MESSAGE** — Send a message to a channel (`channelId`, `content`)
-- **GET_DISCORD_MESSAGES** — Retrieve recent messages from a channel (`channelId`, `limit`)
+- **SEND_DISCORD_MESSAGE** — Send a message to a channel, optionally with file attachments (`channelId`, `content`, `attachments`)
+- **GET_DISCORD_MESSAGES** — Retrieve recent messages from a channel, including attachment filenames/URLs (`channelId`, `limit`)
+
+> **Note:** `attachments` take `{ filename, content, contentType? }` with `content` as base64 and are uploaded as real multipart attachments (not just an embedded image URL).
 
 ### WhatsApp
 
@@ -374,9 +380,11 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 
 ### Slack
 
-- **SEND_SLACK_MESSAGE** — Send a message to a channel (`channelId`, `text`)
+- **SEND_SLACK_MESSAGE** — Send a message to a channel, optionally with file attachments (`channelId`, `text`, `attachments`)
 - **GET_SLACK_MESSAGES** — Retrieve recent messages from a channel (`channelId`, `limit`)
 - **LIST_SLACK_CHANNELS** — List public channels in the workspace (`limit`)
+
+> **Note:** `attachments` take `{ filename, content }` with `content` as base64, uploaded via Slack's `files.uploadV2`. When present, `text` becomes the initial comment on the first file.
 
 ### LinkedIn
 
@@ -575,6 +583,16 @@ Both email tools accept **inline credentials** as optional parameters. When prov
 ```
 
 When `mailer` and `fromAddress` are omitted, the tool falls back to the env var configuration (`MAIL_MAILER`, `MAIL_FROM_ADDRESS`, etc.).
+
+## Proxy Support
+
+`DiscordService`, `SlackService`, and `TelegramService` accept an optional `proxyUrl` in their credentials (e.g. `new DiscordService({ botToken, proxyUrl: "http://user:pass@host:port" })`), routing that account's API calls through an HTTP(S) proxy — useful for a multi-tenant host that wants each connected account's traffic to originate from a distinct, consistent IP. This is a constructor-level option for programmatic/library consumers (not an MCP tool parameter, since it's server-operator infrastructure rather than message content).
+
+Two mechanisms are used depending on how each service talks to its platform, since passing the wrong one is a silent no-op rather than an error:
+- `createProxyDispatcher()` (undici `ProxyAgent`) for services using raw `fetch()`.
+- `createProxyAgent()` (`https-proxy-agent`) for services built on SDKs that take a classic `http.Agent` (Slack's `@slack/web-api`, Telegram's `telegraf`).
+
+Both are exported from `social-mcp/dist/lib/proxy.js` if you need to build the agent/dispatcher yourself.
 
 ## Development
 

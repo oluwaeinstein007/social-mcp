@@ -29,7 +29,12 @@ export const getMessagesTool = {
 				return "No messages found in this channel.";
 			}
 			const list = messages
-				.map((m) => `[${m.timestamp}] ID: ${m.id}\n${m.content}`)
+				.map((m) => {
+					const attachmentLines = m.attachments?.length
+						? `\n${m.attachments.map((a) => `  [attachment] ${a.filename}: ${a.url}`).join("\n")}`
+						: "";
+					return `[${m.timestamp}] ID: ${m.id}\n${m.content}${attachmentLines}`;
+				})
 				.join("\n\n");
 			return `Retrieved ${messages.length} message(s) from channel ${params.channelId}:\n\n${list}`;
 		} catch (error) {

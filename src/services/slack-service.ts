@@ -1,8 +1,17 @@
 import { WebClient } from "@slack/web-api";
 import { CredentialsError } from "../lib/errors.js";
+import { createProxyAgent } from "../lib/proxy.js";
+
+export interface SlackFileAttachment {
+	filename: string;
+	/** Base64-encoded file contents. */
+	content: string;
+}
 
 export interface SlackCredentials {
 	botToken: string;
+	/** Routes API calls through this proxy (e.g. per-tenant IP isolation). */
+	proxyUrl?: string;
 }
 
 export class SlackService {
@@ -13,10 +22,37 @@ export class SlackService {
 		if (!token) {
 			throw new CredentialsError("Slack", ["SLACK_BOT_TOKEN"]);
 		}
-		this.web = new WebClient(token);
+		this.web = new WebClient(token, {
+			agent: createProxyAgent(credentials?.proxyUrl),
+		});
 	}
 
-	async sendMessage(channelId: string, text: string) {
+	async sendMessage(
+		channelId: string,
+		text: string,
+		attachments?: SlackFileAttachment[],
+	) {
+		if (attachments && attachments.length > 0) {
+			const [first, ...rest] = attachments as [
+				SlackFileAttachment,
+				...SlackFileAttachment[],
+			];
+			const uploaded = await this.web.filesUploadV2({
+				channel_id: channelId,
+				file: Buffer.from(first.content, "base64"),
+				filename: first.filename,
+				initial_comment: text,
+			});
+			for (const attachment of rest) {
+				await this.web.filesUploadV2({
+					channel_id: channelId,
+					file: Buffer.from(attachment.content, "base64"),
+					filename: attachment.filename,
+				});
+			}
+			return { messageId: undefined, channelId, text, files: uploaded.files };
+		}
+
 		const result = await this.web.chat.postMessage({
 			channel: channelId,
 			text,

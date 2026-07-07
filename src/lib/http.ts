@@ -1,3 +1,4 @@
+import type { Dispatcher } from "undici";
 import type { z } from "zod";
 
 export class HttpError extends Error {
@@ -11,12 +12,17 @@ export class HttpError extends Error {
 	}
 }
 
+// `dispatcher` is a Node-specific fetch() extension (undici), not part of RequestInit's
+// DOM type — needed here so services can route a call through an HttpsProxyAgent-style
+// proxy via createProxyDispatcher() without every call site casting the options object.
+export type FetchOptions = RequestInit & { dispatcher?: Dispatcher };
+
 export async function fetchJson<T>(
 	url: string,
-	options?: RequestInit,
+	options?: FetchOptions,
 	schema?: z.ZodType<T>,
 ): Promise<T> {
-	const response = await fetch(url, options);
+	const response = await fetch(url, options as RequestInit);
 
 	if (!response.ok) {
 		throw new HttpError(
