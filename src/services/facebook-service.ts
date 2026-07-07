@@ -59,6 +59,8 @@ export class FacebookService {
 		image?: FacebookImage,
 		/** ISO 3166-1 alpha-2 country codes to restrict the audience by location. */
 		targetCountries?: string[],
+		/** A URL for /feed's own link-preview card (e.g. a video URL) — distinct from `image`. */
+		link?: string,
 	) {
 		if (!image) {
 			return fetchJson(
@@ -68,6 +70,7 @@ export class FacebookService {
 					headers: this.headers,
 					body: JSON.stringify({
 						message,
+						...(link ? { link } : {}),
 						...(targetCountries?.length
 							? {
 									targeting: {

@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.9.0
+
+### Minor Changes
+
+- `RedditCredentials` now accepts a pre-obtained `accessToken` as an alternative to the password grant, for callers managing their own OAuth 2.0 authorization-code flow and token refresh elsewhere. Added a `link` parameter to `FacebookService.createPost` for `/feed`'s own link-preview card (distinct from `image`, which uploads a photo attachment).
+
 ## 2.8.0
 
 ### Minor Changes

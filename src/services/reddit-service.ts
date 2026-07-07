@@ -73,10 +73,15 @@ const redditUserSchema = z.object({
 });
 
 export interface RedditCredentials {
-	clientId: string;
-	clientSecret: string;
-	username: string;
-	password: string;
+	// Password grant — required together, RedditService authenticates itself.
+	clientId?: string;
+	clientSecret?: string;
+	username?: string;
+	password?: string;
+	// Alternative to the password grant above: a pre-obtained OAuth 2.0 access token
+	// (e.g. from an authorization-code flow managed elsewhere), used as-is with no
+	// authentication call and no refresh handling — the caller owns keeping it fresh.
+	accessToken?: string;
 	userAgent?: string;
 	proxyUrl?: string;
 }
@@ -91,37 +96,53 @@ export interface RedditMedia {
 export class RedditService {
 	private baseUrl = config.reddit.baseUrl;
 	private userAgent: string;
-	private clientId: string;
-	private clientSecret: string;
-	private username: string;
-	private password: string;
-	private _accessToken: string | null = null;
+	private clientId?: string;
+	private clientSecret?: string;
+	private username?: string;
+	private password?: string;
+	private _accessToken: string | null;
 	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: RedditCredentials) {
-		const clientId = credentials?.clientId ?? config.reddit.clientId;
-		const clientSecret =
-			credentials?.clientSecret ?? config.reddit.clientSecret;
-		const username = credentials?.username ?? config.reddit.username;
-		const password = credentials?.password ?? config.reddit.password;
-		if (!clientId || !clientSecret || !username || !password) {
-			throw new CredentialsError("Reddit", [
-				"REDDIT_CLIENT_ID",
-				"REDDIT_CLIENT_SECRET",
-				"REDDIT_USERNAME",
-				"REDDIT_PASSWORD",
-			]);
+		if (credentials?.accessToken) {
+			this._accessToken = credentials.accessToken;
+		} else {
+			const clientId = credentials?.clientId ?? config.reddit.clientId;
+			const clientSecret =
+				credentials?.clientSecret ?? config.reddit.clientSecret;
+			const username = credentials?.username ?? config.reddit.username;
+			const password = credentials?.password ?? config.reddit.password;
+			if (!clientId || !clientSecret || !username || !password) {
+				throw new CredentialsError("Reddit", [
+					"REDDIT_CLIENT_ID",
+					"REDDIT_CLIENT_SECRET",
+					"REDDIT_USERNAME",
+					"REDDIT_PASSWORD",
+					"(or an accessToken)",
+				]);
+			}
+			this.clientId = clientId;
+			this.clientSecret = clientSecret;
+			this.username = username;
+			this.password = password;
+			this._accessToken = null;
 		}
-		this.clientId = clientId;
-		this.clientSecret = clientSecret;
-		this.username = username;
-		this.password = password;
 		this.userAgent = credentials?.userAgent ?? config.reddit.userAgent;
 		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	private async authenticate(): Promise<string> {
 		if (this._accessToken) return this._accessToken;
+		// Only reachable when the constructor took the password-grant branch, which
+		// validates these are all set — guaranteed non-null here, TS just can't see it.
+		if (
+			!this.clientId ||
+			!this.clientSecret ||
+			!this.username ||
+			!this.password
+		) {
+			throw new Error("Reddit password-grant credentials are missing");
+		}
 		const encoded = Buffer.from(
 			`${this.clientId}:${this.clientSecret}`,
 		).toString("base64");
