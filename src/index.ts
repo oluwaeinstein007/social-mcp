@@ -37,6 +37,7 @@ import { searchPostsTool as blueskySearchPostsTool } from "./tools/bluesky-tools
 import { createArticleTool as devtoCreateArticleTool } from "./tools/devto-tools/create-article.js";
 import { getArticleTool as devtoGetArticleTool } from "./tools/devto-tools/get-article.js";
 import { getArticlesTool as devtoGetArticlesTool } from "./tools/devto-tools/get-articles.js";
+import { getMeTool as devtoGetMeTool } from "./tools/devto-tools/get-me.js";
 import { updateArticleTool as devtoUpdateArticleTool } from "./tools/devto-tools/update-article.js";
 import { getMessagesTool as discordGetMessagesTool } from "./tools/discord-tools/get-messages.js";
 import { sendMessageTool as discordSendMessageTool } from "./tools/discord-tools/send-message.js";
@@ -303,6 +304,7 @@ async function main() {
 	server.addTool(devtoGetArticlesTool);
 	server.addTool(devtoGetArticleTool);
 	server.addTool(devtoUpdateArticleTool);
+	server.addTool(devtoGetMeTool);
 
 	// Hashnode
 	server.addTool(hashnodeCreatePostTool);

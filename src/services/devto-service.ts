@@ -40,6 +40,17 @@ const articleResponseSchema = z.object({
 
 export type DevToArticle = z.infer<typeof articleSchema>;
 
+const meSchema = z.object({
+	id: z.number(),
+	username: z.string(),
+	name: z.string().optional(),
+	summary: z.string().nullable().optional(),
+	twitter_username: z.string().nullable().optional(),
+	github_username: z.string().nullable().optional(),
+	website_url: z.string().nullable().optional(),
+	profile_image: z.string().optional(),
+});
+
 export interface DevToCredentials {
 	apiKey: string;
 	proxyUrl?: string;
@@ -61,6 +72,14 @@ export class DevToService {
 			Accept: "application/vnd.forem.api-v1+json",
 		};
 		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
+	}
+
+	async getMe() {
+		return fetchJson(
+			`${this.baseUrl}/users/me`,
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
+			meSchema,
+		);
 	}
 
 	async getMyArticles(page = 1, perPage = 30) {

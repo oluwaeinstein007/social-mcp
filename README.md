@@ -504,6 +504,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **DEVTO_GET_MY_ARTICLES** — List all articles published by the authenticated user (`page`, `perPage`)
 - **DEVTO_GET_ARTICLE** — Get a specific article by ID including its full Markdown body (`id`)
 - **DEVTO_UPDATE_ARTICLE** — Update an existing article (`id`, `title`, `bodyMarkdown`, `published`, `tags`, `description`, `canonicalUrl`)
+- **DEVTO_GET_ME** — Get the authenticated user's profile — also useful to validate an API key at connect time
 
 > **Note:** Get your API key at [dev.to/settings/extensions](https://dev.to/settings/extensions). Set `published: false` to save as a draft. `mainImage` is a URL only — Dev.to's public API has no image upload endpoint; body images must already be hosted and linked in the Markdown.
 

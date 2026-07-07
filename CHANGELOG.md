@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.11.0
+
+### Minor Changes
+
+- Added `DevToService.getMe()` / `DEVTO_GET_ME` tool — a lightweight "who am I" call, useful for validating an API key without needing to create or list content.
+
 ## 2.10.1
 
 ### Patch Changes
