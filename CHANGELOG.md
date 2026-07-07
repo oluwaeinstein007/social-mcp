@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.4.1
+
+### Patch Changes
+
+- release of AWS SES support and verify
+
 ## 2.4.0
 
 ### Minor Changes
