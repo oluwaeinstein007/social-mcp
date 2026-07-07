@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const mastodonAccountSchema = z.object({
 	id: z.string(),
@@ -32,11 +33,20 @@ const mastodonSearchSchema = z.object({
 export interface MastodonCredentials {
 	accessToken: string;
 	instanceUrl?: string;
+	proxyUrl?: string;
+}
+
+export interface MastodonMediaAttachment {
+	/** Base64-encoded file bytes. */
+	content: string;
+	filename?: string;
+	description?: string;
 }
 
 export class MastodonService {
 	private baseUrl: string;
 	private headers: Record<string, string>;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: MastodonCredentials) {
 		const accessToken = credentials?.accessToken ?? config.mastodon.accessToken;
@@ -49,26 +59,59 @@ export class MastodonService {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${accessToken}`,
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	async getProfile() {
 		return fetchJson(
 			`${this.baseUrl}/accounts/verify_credentials`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			mastodonAccountSchema,
 		);
+	}
+
+	// v2/media uploads a file and returns its attachment id, which a status then
+	// references via media_ids — Mastodon has no way to carry bytes inline on a post.
+	async uploadMedia(attachment: MastodonMediaAttachment): Promise<string> {
+		const formData = new FormData();
+		const buffer = Buffer.from(attachment.content, "base64");
+		formData.append("file", new Blob([buffer]), attachment.filename ?? "file");
+		if (attachment.description)
+			formData.append("description", attachment.description);
+
+		const response = await fetch(
+			`${this.baseUrl.replace("/api/v1", "/api/v2")}/media`,
+			{
+				method: "POST",
+				headers: { Authorization: this.headers.Authorization ?? "" },
+				body: formData,
+				dispatcher: this.dispatcher,
+			} as RequestInit,
+		);
+		if (!response.ok) {
+			throw new Error(
+				`Mastodon media upload error (${response.status}): ${await response.text()}`,
+			);
+		}
+		return z.object({ id: z.string() }).parse(await response.json()).id;
 	}
 
 	async createPost(
 		status: string,
 		visibility: "public" | "unlisted" | "private" | "direct" = "public",
+		mediaIds?: string[],
 	) {
 		return fetchJson(
 			`${this.baseUrl}/statuses`,
 			{
 				method: "POST",
 				headers: this.headers,
-				body: JSON.stringify({ status, visibility }),
+				body: JSON.stringify({
+					status,
+					visibility,
+					...(mediaIds?.length ? { media_ids: mediaIds } : {}),
+				}),
+				dispatcher: this.dispatcher,
 			},
 			mastodonStatusSchema,
 		);
@@ -89,6 +132,7 @@ export class MastodonService {
 					in_reply_to_id: inReplyToId,
 					visibility,
 				}),
+				dispatcher: this.dispatcher,
 			},
 			mastodonStatusSchema,
 		);
@@ -98,7 +142,8 @@ export class MastodonService {
 		const response = await fetch(`${this.baseUrl}/statuses/${statusId}`, {
 			method: "DELETE",
 			headers: this.headers,
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Mastodon API error ${response.status}: ${await response.text()}`,
@@ -109,7 +154,7 @@ export class MastodonService {
 	async boostPost(statusId: string) {
 		return fetchJson(
 			`${this.baseUrl}/statuses/${statusId}/reblog`,
-			{ method: "POST", headers: this.headers },
+			{ method: "POST", headers: this.headers, dispatcher: this.dispatcher },
 			mastodonStatusSchema,
 		);
 	}
@@ -117,7 +162,7 @@ export class MastodonService {
 	async favouritePost(statusId: string) {
 		return fetchJson(
 			`${this.baseUrl}/statuses/${statusId}/favourite`,
-			{ method: "POST", headers: this.headers },
+			{ method: "POST", headers: this.headers, dispatcher: this.dispatcher },
 			mastodonStatusSchema,
 		);
 	}
@@ -130,7 +175,7 @@ export class MastodonService {
 		});
 		return fetchJson(
 			`${this.baseUrl}/search?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			mastodonSearchSchema,
 		);
 	}

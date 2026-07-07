@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const blogInfoSchema = z.object({
 	response: z.object({
@@ -23,7 +24,9 @@ const npfContentBlock = z.object({
 	text: z.string().optional(),
 	subtype: z.string().optional(),
 	url: z.string().optional(),
-	media: z.array(z.object({ url: z.string(), type: z.string().optional() })).optional(),
+	media: z
+		.array(z.object({ url: z.string(), type: z.string().optional() }))
+		.optional(),
 });
 
 const postSchema = z.object({
@@ -63,28 +66,52 @@ const createPostResponseSchema = z.object({
 export interface TumblrCredentials {
 	accessToken: string;
 	blogIdentifier?: string;
+	proxyUrl?: string;
 }
+
+export interface TumblrMediaAttachment {
+	/** Base64-encoded image/video bytes. */
+	content: string;
+	contentType: string;
+	/** Referenced from a content block via `{type: "image"|"video", media: {identifier}}`. */
+	identifier: string;
+}
+
+type TumblrContentBlock = {
+	type: string;
+	text?: string;
+	subtype?: string;
+	media?:
+		| Array<{ url?: string; identifier?: string; type?: string }>
+		| { url?: string; identifier?: string; type?: string };
+};
 
 export class TumblrService {
 	private baseUrl = config.tumblr.baseUrl;
 	private headers: Record<string, string>;
 	private blogIdentifier: string;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: TumblrCredentials) {
 		const accessToken = credentials?.accessToken ?? config.tumblr.accessToken;
 		if (!accessToken) {
 			throw new CredentialsError("Tumblr", ["TUMBLR_ACCESS_TOKEN"]);
 		}
-		this.blogIdentifier = credentials?.blogIdentifier ?? config.tumblr.blogIdentifier;
+		this.blogIdentifier =
+			credentials?.blogIdentifier ?? config.tumblr.blogIdentifier;
 		this.headers = {
 			Authorization: `Bearer ${accessToken}`,
 			"Content-Type": "application/json",
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	private getBlog(override?: string): string {
 		const blog = override ?? this.blogIdentifier;
-		if (!blog) throw new Error("blogIdentifier is required. Set TUMBLR_BLOG_IDENTIFIER or pass it explicitly.");
+		if (!blog)
+			throw new Error(
+				"blogIdentifier is required. Set TUMBLR_BLOG_IDENTIFIER or pass it explicitly.",
+			);
 		return blog;
 	}
 
@@ -92,49 +119,104 @@ export class TumblrService {
 		const blog = this.getBlog(blogIdentifier);
 		return fetchJson(
 			`${this.baseUrl}/blog/${blog}/info`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			blogInfoSchema,
 		);
 	}
 
-	async getPosts(blogIdentifier?: string, type?: string, offset = 0, limit = 10) {
+	async getPosts(
+		blogIdentifier?: string,
+		type?: string,
+		offset = 0,
+		limit = 10,
+	) {
 		const blog = this.getBlog(blogIdentifier);
-		const params = new URLSearchParams({ offset: String(offset), limit: String(limit), npf: "false" });
+		const params = new URLSearchParams({
+			offset: String(offset),
+			limit: String(limit),
+			npf: "false",
+		});
 		if (type) params.set("type", type);
 		return fetchJson(
 			`${this.baseUrl}/blog/${blog}/posts?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			postsResponseSchema,
 		);
 	}
 
 	async createPost(
 		blogIdentifier: string | undefined,
-		content: Array<{ type: string; text?: string; subtype?: string }>,
+		content: TumblrContentBlock[],
 		tags: string[] = [],
 		state: "published" | "draft" | "queue" | "private" = "published",
 		title?: string,
 		nativeInlineImages = false,
+		// Photo/video content blocks reference these by `identifier` — NPF supports
+		// referencing an already-hosted URL directly in `content`, so this is only
+		// needed when the caller has raw bytes rather than a public URL.
+		attachments?: TumblrMediaAttachment[],
 	) {
 		const blog = this.getBlog(blogIdentifier);
-		const body: Record<string, unknown> = { content, tags, state, native_inline_images: nativeInlineImages };
+		const body: Record<string, unknown> = {
+			content,
+			tags,
+			state,
+			native_inline_images: nativeInlineImages,
+		};
 		if (title) body.title = title;
 
-		return fetchJson(
-			`${this.baseUrl}/blog/${blog}/posts`,
-			{ method: "POST", headers: this.headers, body: JSON.stringify(body) },
-			createPostResponseSchema,
-		);
+		if (!attachments?.length) {
+			return fetchJson(
+				`${this.baseUrl}/blog/${blog}/posts`,
+				{
+					method: "POST",
+					headers: this.headers,
+					body: JSON.stringify(body),
+					dispatcher: this.dispatcher,
+				},
+				createPostResponseSchema,
+			);
+		}
+
+		const formData = new FormData();
+		formData.append("json", JSON.stringify(body));
+		for (const attachment of attachments) {
+			const buffer = Buffer.from(attachment.content, "base64");
+			formData.append(
+				attachment.identifier,
+				new Blob([buffer], { type: attachment.contentType }),
+				attachment.identifier,
+			);
+		}
+
+		const response = await fetch(`${this.baseUrl}/blog/${blog}/posts`, {
+			method: "POST",
+			headers: { Authorization: this.headers.Authorization ?? "" },
+			body: formData,
+			dispatcher: this.dispatcher,
+		} as RequestInit);
+		if (!response.ok) {
+			throw new Error(
+				`Tumblr API error (${response.status}): ${await response.text()}`,
+			);
+		}
+		return createPostResponseSchema.parse(await response.json());
 	}
 
 	async deletePost(postId: string, blogIdentifier?: string) {
 		const blog = this.getBlog(blogIdentifier);
-		const response = await fetch(`${this.baseUrl}/blog/${blog}/posts/${postId}`, {
-			method: "DELETE",
-			headers: this.headers,
-		});
+		const response = await fetch(
+			`${this.baseUrl}/blog/${blog}/posts/${postId}`,
+			{
+				method: "DELETE",
+				headers: this.headers,
+				dispatcher: this.dispatcher,
+			} as RequestInit,
+		);
 		if (!response.ok) {
-			throw new Error(`Tumblr API error ${response.status}: ${response.statusText}`);
+			throw new Error(
+				`Tumblr API error ${response.status}: ${response.statusText}`,
+			);
 		}
 	}
 }

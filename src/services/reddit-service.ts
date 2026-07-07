@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
+
+const mediaLeaseSchema = z.object({
+	args: z.object({
+		action: z.string(),
+		fields: z.array(z.object({ name: z.string(), value: z.string() })),
+	}),
+	asset: z.object({ asset_id: z.string() }),
+});
 
 const redditTokenSchema = z.object({
 	access_token: z.string(),
@@ -69,6 +78,14 @@ export interface RedditCredentials {
 	username: string;
 	password: string;
 	userAgent?: string;
+	proxyUrl?: string;
+}
+
+export interface RedditMedia {
+	/** Base64-encoded image/video bytes. */
+	content: string;
+	filename: string;
+	mimeType: string;
 }
 
 export class RedditService {
@@ -79,6 +96,7 @@ export class RedditService {
 	private username: string;
 	private password: string;
 	private _accessToken: string | null = null;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: RedditCredentials) {
 		const clientId = credentials?.clientId ?? config.reddit.clientId;
@@ -99,6 +117,7 @@ export class RedditService {
 		this.username = username;
 		this.password = password;
 		this.userAgent = credentials?.userAgent ?? config.reddit.userAgent;
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	private async authenticate(): Promise<string> {
@@ -118,7 +137,8 @@ export class RedditService {
 				username: this.username,
 				password: this.password,
 			}),
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Reddit auth failed: ${response.status} ${await response.text()}`,
@@ -138,22 +158,76 @@ export class RedditService {
 		};
 	}
 
+	// Reddit's own upload endpoint is a two-step lease-then-S3-PUT flow: ask for a
+	// signed upload slot, POST the bytes there with the fields it gave you verbatim,
+	// then the asset is reachable at the conventional i.redd.it/<asset_id> URL.
+	async uploadMedia(media: RedditMedia): Promise<string> {
+		const headers = await this.headers();
+		const leaseRes = await fetch(`${this.baseUrl}/api/media/asset.json`, {
+			method: "POST",
+			headers,
+			body: new URLSearchParams({
+				filepath: media.filename,
+				mimetype: media.mimeType,
+			}),
+			dispatcher: this.dispatcher,
+		} as RequestInit);
+		if (!leaseRes.ok) {
+			throw new Error(
+				`Reddit media lease failed: ${leaseRes.status} ${await leaseRes.text()}`,
+			);
+		}
+		const lease = mediaLeaseSchema.parse(await leaseRes.json());
+
+		const formData = new FormData();
+		for (const field of lease.args.fields) {
+			formData.append(field.name, field.value);
+		}
+		const buffer = Buffer.from(media.content, "base64");
+		formData.append(
+			"file",
+			new Blob([buffer], { type: media.mimeType }),
+			media.filename,
+		);
+
+		const uploadUrl = lease.args.action.startsWith("//")
+			? `https:${lease.args.action}`
+			: lease.args.action;
+		const uploadRes = await fetch(uploadUrl, {
+			method: "POST",
+			body: formData,
+			dispatcher: this.dispatcher,
+		} as RequestInit);
+		if (!uploadRes.ok) {
+			throw new Error(
+				`Reddit media upload failed: ${uploadRes.status} ${await uploadRes.text()}`,
+			);
+		}
+
+		return `https://i.redd.it/${lease.asset.asset_id}`;
+	}
+
 	async submitPost(
 		subreddit: string,
 		title: string,
-		kind: "self" | "link",
+		kind: "self" | "link" | "image",
 		text?: string,
 		url?: string,
+		media?: RedditMedia,
 	) {
 		const headers = await this.headers();
+		const mediaUrl =
+			kind === "image" && media ? await this.uploadMedia(media) : url;
 		const body = new URLSearchParams({ sr: subreddit, title, kind });
 		if (kind === "self" && text) body.set("text", text);
-		if (kind === "link" && url) body.set("url", url);
+		if ((kind === "link" || kind === "image") && mediaUrl)
+			body.set("url", mediaUrl);
 		const response = await fetch(`${this.baseUrl}/api/submit`, {
 			method: "POST",
 			headers,
 			body,
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Reddit API error ${response.status}: ${await response.text()}`,
@@ -170,7 +244,7 @@ export class RedditService {
 		const headers = await this.headers();
 		const response = await fetch(
 			`${this.baseUrl}/r/${subreddit}/${sort}?limit=${limit}`,
-			{ method: "GET", headers },
+			{ method: "GET", headers, dispatcher: this.dispatcher } as RequestInit,
 		);
 		if (!response.ok) {
 			throw new Error(
@@ -187,7 +261,8 @@ export class RedditService {
 			method: "POST",
 			headers,
 			body,
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Reddit API error ${response.status}: ${await response.text()}`,
@@ -203,7 +278,8 @@ export class RedditService {
 			method: "POST",
 			headers,
 			body,
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Reddit API error ${response.status}: ${await response.text()}`,
@@ -226,7 +302,11 @@ export class RedditService {
 		const base = subreddit
 			? `${this.baseUrl}/r/${subreddit}/search?${params}&restrict_sr=1`
 			: `${this.baseUrl}/search?${params}`;
-		const response = await fetch(base, { method: "GET", headers });
+		const response = await fetch(base, {
+			method: "GET",
+			headers,
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Reddit API error ${response.status}: ${await response.text()}`,
@@ -240,7 +320,8 @@ export class RedditService {
 		const response = await fetch(`${this.baseUrl}/user/${username}/about`, {
 			method: "GET",
 			headers,
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
 			throw new Error(
 				`Reddit API error ${response.status}: ${await response.text()}`,

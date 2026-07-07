@@ -1,5 +1,19 @@
 # social-mcp
 
+## 2.7.0
+
+### Minor Changes
+
+- Broad media/file pass across most platforms, plus expanded proxy support.
+
+  **New media capabilities**: Discord (real multipart attachments, not just embed URLs), Slack (`files.uploadV2`), Telegram (`TELEGRAM_SEND_PHOTO`/`TELEGRAM_SEND_DOCUMENT`), Instagram (VIDEO/REELS support with container-status polling — previously publishing before processing finished could fail outright), Facebook (photo + new `CREATE_FACEBOOK_VIDEO_POST`), WhatsApp (image/video/document messages, with base64 uploaded to WhatsApp's media store first), Threads (IMAGE/VIDEO with the same container-polling fix as Instagram), Twitter/X (real media upload via `twitter-api-v2`'s `uploadMedia`, which picks simple vs. chunked based on size), Pinterest (native `image_base64` support, no separate upload step), Mastodon (`/api/v2/media` upload), Bluesky (`uploadBlob` + image embeds), YouTube (new `YOUTUBE_UPLOAD_VIDEO`, multipart upload), LinkedIn (image upload via the register→PUT→reference asset flow), Reddit (image/video via the lease→S3-upload flow), Ghost (`/images/upload/` for feature images), Tumblr (inline NPF media upload).
+
+  **Twitter credentials**: `TwitterCredentials` now accepts a `bearerToken` (OAuth 2.0 user-context token) as an alternative to the four OAuth 1.0a fields, for callers that only have a bearer token.
+
+  **Proxy support** extended from the Discord/Slack/Telegram pilot to: Twitter/X, Instagram, Facebook, WhatsApp, Threads, LinkedIn, Reddit, Pinterest, Mastodon, YouTube, Ghost, Tumblr.
+
+  **Known gaps** (documented in README, not implemented): TikTok's `FILE_UPLOAD` mode (URL-based `PULL_FROM_URL` still works), and Dev.to/Hashnode/Beehiiv, which have no image upload endpoint in their public APIs at all.
+
 ## 2.6.0
 
 ### Minor Changes

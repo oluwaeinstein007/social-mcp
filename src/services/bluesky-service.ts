@@ -8,6 +8,13 @@ export interface BlueskyCredentials {
 	service?: string;
 }
 
+export interface BlueskyImage {
+	/** Base64-encoded image bytes. Max 4 per post (AT Proto's own limit). */
+	content: string;
+	mimeType: string;
+	alt?: string;
+}
+
 export class BlueskyService {
 	private agent: BskyAgent;
 	private identifier: string;
@@ -39,9 +46,28 @@ export class BlueskyService {
 		}
 	}
 
-	async createPost(text: string) {
+	async createPost(text: string, images?: BlueskyImage[]) {
 		await this.ensureLoggedIn();
-		return this.agent.post({ text });
+		if (!images?.length) {
+			return this.agent.post({ text });
+		}
+
+		// AT Proto has no "attach a URL" shortcut — every image is a blob uploaded to
+		// the user's own PDS first, then referenced by its returned blob ref in the post.
+		const embedImages = await Promise.all(
+			images.slice(0, 4).map(async (image) => {
+				const buffer = Buffer.from(image.content, "base64");
+				const { data } = await this.agent.uploadBlob(buffer, {
+					encoding: image.mimeType,
+				});
+				return { image: data.blob, alt: image.alt ?? "" };
+			}),
+		);
+
+		return this.agent.post({
+			text,
+			embed: { $type: "app.bsky.embed.images", images: embedImages },
+		});
 	}
 
 	async replyToPost(

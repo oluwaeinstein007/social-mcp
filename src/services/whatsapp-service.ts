@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const whatsappMessageSchema = z.object({
 	messaging_product: z.string(),
@@ -9,15 +10,32 @@ const whatsappMessageSchema = z.object({
 	messages: z.array(z.object({ id: z.string() })),
 });
 
+const whatsappMediaUploadSchema = z.object({
+	id: z.string(),
+});
+
 export interface WhatsappCredentials {
 	accessToken: string;
 	phoneNumberId: string;
+	proxyUrl?: string;
+}
+
+export interface WhatsappMedia {
+	/** Public media URL, or base64-encoded bytes (uploaded first, then referenced by ID). */
+	media: string;
+	contentType?: string;
+	filename?: string;
+}
+
+function isHttpUrl(value: string): boolean {
+	return value.startsWith("http://") || value.startsWith("https://");
 }
 
 export class WhatsappService {
 	private baseUrl = config.whatsapp.baseUrl;
 	private phoneNumberId: string;
 	private headers: Record<string, string>;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: WhatsappCredentials) {
 		const accessToken = credentials?.accessToken ?? config.whatsapp.accessToken;
@@ -34,27 +52,95 @@ export class WhatsappService {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${accessToken}`,
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
-	async sendMessage(to: string, text: string) {
-		if (!to || !text) {
-			throw new Error("Both 'to' and 'text' parameters are required");
+	// Base64 media must be uploaded to WhatsApp's own media store first — messages
+	// reference it by the returned media ID, they can't carry bytes inline.
+	private async uploadMedia(
+		content: string,
+		contentType: string,
+		filename?: string,
+	): Promise<string> {
+		const formData = new FormData();
+		formData.append("messaging_product", "whatsapp");
+		const buffer = Buffer.from(content, "base64");
+		formData.append(
+			"file",
+			new Blob([buffer], { type: contentType }),
+			filename ?? "file",
+		);
+
+		const response = await fetch(
+			`${this.baseUrl}/${this.phoneNumberId}/media`,
+			{
+				method: "POST",
+				headers: { Authorization: this.headers.Authorization ?? "" },
+				body: formData,
+				dispatcher: this.dispatcher,
+			} as RequestInit,
+		);
+		if (!response.ok) {
+			throw new Error(
+				`WhatsApp media upload error (${response.status}): ${await response.text()}`,
+			);
+		}
+		return whatsappMediaUploadSchema.parse(await response.json()).id;
+	}
+
+	async sendMessage(
+		to: string,
+		text: string,
+		media?: WhatsappMedia,
+		mediaKind: "image" | "video" | "document" = "image",
+	) {
+		if (!to) {
+			throw new Error("'to' parameter is required");
 		}
 		if (!/^\+?[1-9]\d{1,14}$/.test(to)) {
 			throw new Error("Invalid phone number format");
 		}
-		const body = {
-			messaging_product: "whatsapp",
-			to,
-			type: "text",
-			text: { body: text },
-		};
+
+		let body: Record<string, unknown>;
+		if (media) {
+			const ref = isHttpUrl(media.media)
+				? { link: media.media }
+				: {
+						id: await this.uploadMedia(
+							media.media,
+							media.contentType ?? "application/octet-stream",
+							media.filename,
+						),
+					};
+			body = {
+				messaging_product: "whatsapp",
+				to,
+				type: mediaKind,
+				[mediaKind]: {
+					...ref,
+					...(mediaKind === "document"
+						? { caption: text, filename: media.filename }
+						: { caption: text }),
+				},
+			};
+		} else {
+			if (!text)
+				throw new Error("'text' is required when no media is provided");
+			body = {
+				messaging_product: "whatsapp",
+				to,
+				type: "text",
+				text: { body: text },
+			};
+		}
+
 		return fetchJson(
 			`${this.baseUrl}/${this.phoneNumberId}/messages`,
 			{
 				method: "POST",
 				headers: this.headers,
 				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
 			},
 			whatsappMessageSchema,
 		);

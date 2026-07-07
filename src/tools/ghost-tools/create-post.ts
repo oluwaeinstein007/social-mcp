@@ -10,21 +10,43 @@ const params = z.object({
 		.optional()
 		.default("draft")
 		.describe("Post status (default: draft)"),
-	tags: z.array(z.string()).optional().describe("Tag names to assign to the post"),
+	tags: z
+		.array(z.string())
+		.optional()
+		.describe("Tag names to assign to the post"),
 	excerpt: z.string().optional().describe("Custom excerpt shown in listings"),
 	publishedAt: z
 		.string()
 		.optional()
 		.describe("ISO 8601 date for scheduling, e.g. '2024-12-25T09:00:00.000Z'"),
-	siteUrl: z.string().optional().describe("Ghost site URL (overrides GHOST_SITE_URL env var)"),
-	adminApiKey: z.string().optional().describe("Ghost Admin API key id:secret (overrides GHOST_ADMIN_API_KEY env var)"),
+	featureImage: z
+		.string()
+		.optional()
+		.describe(
+			"Feature image: a public URL, or base64-encoded image bytes to upload.",
+		),
+	featureImageFilename: z
+		.string()
+		.optional()
+		.describe("Filename to use when `featureImage` is base64-encoded bytes."),
+	siteUrl: z
+		.string()
+		.optional()
+		.describe("Ghost site URL (overrides GHOST_SITE_URL env var)"),
+	adminApiKey: z
+		.string()
+		.optional()
+		.describe(
+			"Ghost Admin API key id:secret (overrides GHOST_ADMIN_API_KEY env var)",
+		),
 });
 
 type Params = z.infer<typeof params>;
 
 export const createPostTool = {
 	name: "GHOST_CREATE_POST",
-	description: "Create a post on a Ghost blog via the Admin API. Supports draft, published, and scheduled statuses.",
+	description:
+		"Create a post on a Ghost blog via the Admin API. Supports draft, published, and scheduled statuses.",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {
@@ -32,6 +54,13 @@ export const createPostTool = {
 				p.siteUrl && p.adminApiKey
 					? new GhostService({ siteUrl: p.siteUrl, adminApiKey: p.adminApiKey })
 					: getGhostService();
+
+			const featureImage = p.featureImage
+				? p.featureImage.startsWith("http://") ||
+					p.featureImage.startsWith("https://")
+					? p.featureImage
+					: await service.uploadImage(p.featureImage, p.featureImageFilename)
+				: undefined;
 
 			const result = await service.createPost(
 				p.title,
@@ -41,6 +70,7 @@ export const createPostTool = {
 				p.tags ?? [],
 				p.excerpt,
 				p.publishedAt,
+				featureImage,
 			);
 
 			const post = result.posts[0];

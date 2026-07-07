@@ -348,12 +348,14 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 
 ### Twitter / X
 
-- **SEND_TWEET** — Post a tweet (`text`, max 280 chars)
+- **SEND_TWEET** — Post a tweet, optionally with up to 4 image attachments or 1 gif/video (`text`, max 280 chars, `media`)
 - **REPLY_TWEET** — Reply to a tweet (`tweetId`, `text`)
 - **LIKE_TWEET** — Like a tweet (`tweetId`)
 - **DELETE_TWEET** — Delete a tweet (`tweetId`)
 - **GET_TWITTER_USER_INFO** — Get a user's profile and metrics (`username`)
 - **SEARCH_TWEETS** — Search recent tweets (`query`, `maxResults`)
+
+> **Note:** `media` takes `{ content, mimeType }[]` with `content` as base64, uploaded via `twitter-api-v2`'s `uploadMedia` (picks simple vs. chunked upload based on file size, so video is supported). `TwitterCredentials` also accepts a `bearerToken` in place of the four OAuth 1.0a fields (`appKey`/`appSecret`/`accessToken`/`accessSecret`) for callers that only have an OAuth 2.0 user-context token — X accepts it on both v2 and v1.1 media upload endpoints.
 
 ### Discord
 
@@ -364,19 +366,24 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 
 ### WhatsApp
 
-- **SEND_WHATSAPP_MESSAGE** — Send a message to a phone number in E.164 format (`to`, `text`)
+- **SEND_WHATSAPP_MESSAGE** — Send a text, image, video, or document message (`to`, `text`, `media`, `mediaKind`, `mediaContentType`, `mediaFilename`)
 
-> **Note:** WhatsApp message retrieval requires webhook setup and cannot be polled via the API.
+> **Note:** `media` is a public URL (sent as `link`) or base64-encoded bytes — base64 is uploaded to WhatsApp's media store first (`/media`) and referenced by the returned ID, since messages can't carry bytes inline. WhatsApp message retrieval requires webhook setup and cannot be polled via the API.
 
 ### Facebook
 
-- **CREATE_FACEBOOK_POST** — Create a post on a Facebook page (`pageId`, `message`)
+- **CREATE_FACEBOOK_POST** — Create a post on a Facebook page, optionally with a photo (`pageId`, `message`, `image`, `imageFilename`)
+- **CREATE_FACEBOOK_VIDEO_POST** — Upload and publish a video on a page (`pageId`, `description`, `video`, `filename`)
 - **GET_FACEBOOK_POSTS** — Retrieve recent posts from a page (`pageId`, `limit`)
+
+> **Note:** `image`/`video` take either a public URL (fetched server-side via `/photos`' `url` / `/videos`' `file_url`) or base64-encoded bytes (uploaded as a real multipart `source`).
 
 ### Instagram
 
-- **CREATE_INSTAGRAM_POST** — Publish an image post (`userId`, `imageUrl`, `caption`)
-- **GET_INSTAGRAM_POSTS** — Retrieve recent posts from an account (`userId`, `limit`)
+- **CREATE_INSTAGRAM_POST** — Publish an image, video, or Reels post (`userId`, `imageUrl`, `caption`, `mediaType`: IMAGE/VIDEO/REELS)
+- **GET_INSTAGRAM_POSTS** — Retrieve recent posts from an account, including `media_url`/`permalink` (`userId`, `limit`)
+
+> **Note:** `imageUrl` must be a publicly reachable URL for all media types — Instagram's Content Publishing API has no direct byte-upload path. For VIDEO/REELS, the container is polled until Meta finishes processing before publishing (previously publishing immediately could fail while the video was still processing).
 
 ### Slack
 
@@ -389,53 +396,59 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 ### LinkedIn
 
 - **GET_LINKEDIN_PROFILE** — Get the authenticated user's profile information
-- **CREATE_LINKEDIN_POST** — Create a UGC post (`authorUrn`, `text`, `visibility`)
+- **CREATE_LINKEDIN_POST** — Create a UGC post, optionally with an image (`authorUrn`, `text`, `visibility`, `image`, `imageTitle`)
 - **GET_LINKEDIN_POSTS** — Retrieve recent posts by a member or organization (`authorUrn`, `count`)
 - **DELETE_LINKEDIN_POST** — Delete a UGC post (`ugcPostUrn`)
 - **LIKE_LINKEDIN_POST** — Like a post (`actorUrn`, `ugcPostUrn`)
 - **ADD_LINKEDIN_COMMENT** — Comment on a post (`actorUrn`, `ugcPostUrn`, `text`)
 - **SEARCH_LINKEDIN_PEOPLE** — Search for people by keywords (`keywords`, `count`)
 
-> **Note:** `SEARCH_LINKEDIN_PEOPLE` uses the LinkedIn People Search API which requires [Partner Program](https://learn.microsoft.com/en-us/linkedin/talent/recruiter-system-connect/getting-access) access. Most developer apps will receive a 403. All other tools work with a standard OAuth 2.0 token.
+> **Note:** `SEARCH_LINKEDIN_PEOPLE` uses the LinkedIn People Search API which requires [Partner Program](https://learn.microsoft.com/en-us/linkedin/talent/recruiter-system-connect/getting-access) access. Most developer apps will receive a 403. All other tools work with a standard OAuth 2.0 token. `image` is base64-encoded bytes — LinkedIn's UGC API has no URL-reference option, so it always goes through the register-upload → PUT bytes → reference-asset-URN flow.
 
 ### Reddit
 
-- **REDDIT_SUBMIT_POST** — Submit a text or link post to a subreddit (`subreddit`, `title`, `kind`, `text`, `url`)
+- **REDDIT_SUBMIT_POST** — Submit a text, link, or image post to a subreddit (`subreddit`, `title`, `kind`, `text`, `url`, `image`, `imageFilename`, `imageMimeType`)
 - **REDDIT_GET_POSTS** — Get posts from a subreddit (`subreddit`, `sort`, `limit`)
 - **REDDIT_COMMENT** — Comment on a post or reply to a comment (`parentId`, `text`)
 - **REDDIT_VOTE** — Upvote, downvote, or remove a vote (`id`, `direction`)
 - **REDDIT_SEARCH** — Search Reddit across all or a specific subreddit (`query`, `subreddit`, `sort`, `limit`)
 - **REDDIT_GET_USER_INFO** — Get public info about a Reddit user (`username`)
 
-> **Note:** Reddit requires a "script" type app in [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps). The password grant flow is used — 2FA must be disabled on the account.
+> **Note:** Reddit requires a "script" type app in [reddit.com/prefs/apps](https://www.reddit.com/prefs/apps). The password grant flow is used — 2FA must be disabled on the account. For `kind: "image"`, base64 bytes go through Reddit's lease-then-S3-upload flow (`/api/media/asset.json`) and the post links to the resulting `i.redd.it` asset.
 
 ### Threads
 
 - **THREADS_GET_PROFILE** — Get your Threads profile information
-- **THREADS_CREATE_POST** — Create a new text post (`text`)
+- **THREADS_CREATE_POST** — Create a new post, optionally with an image or video (`text`, `replyToId`, `mediaUrl`, `mediaType`: IMAGE/VIDEO)
 - **THREADS_REPLY** — Reply to a Threads post (`replyToId`, `text`)
-- **THREADS_GET_POSTS** — Get recent posts from your account (`limit`)
+- **THREADS_GET_POSTS** — Get recent posts from your account, including `media_url` (`limit`)
 - **THREADS_DELETE_POST** — Delete a post by ID (`mediaId`)
+
+> **Note:** `mediaUrl` must be a publicly reachable URL, same as Instagram (shared Meta infrastructure). IMAGE/VIDEO containers are polled until processing finishes before publishing.
 
 ### Bluesky
 
 - **BLUESKY_GET_PROFILE** — Get your Bluesky profile information
-- **BLUESKY_CREATE_POST** — Create a new text post (`text`)
+- **BLUESKY_CREATE_POST** — Create a new post, optionally with up to 4 images (`text`, `images`)
 - **BLUESKY_REPLY_TO_POST** — Reply to a Bluesky post (`text`, `parentUri`, `parentCid`, `rootUri`, `rootCid`)
 - **BLUESKY_GET_POSTS** — Get recent posts from your feed (`limit`)
 - **BLUESKY_DELETE_POST** — Delete a post by URI (`uri`, `cid`)
 - **BLUESKY_LIKE_POST** — Like a post (`uri`, `cid`)
 - **BLUESKY_SEARCH_POSTS** — Search for posts on Bluesky (`query`, `limit`)
 
+> **Note:** `images` take `{ content, mimeType, alt? }[]` with `content` as base64 — AT Proto has no URL-reference option, every image is uploaded as a blob (`uploadBlob`) and referenced in the post's embed.
+
 ### Mastodon
 
 - **MASTODON_GET_PROFILE** — Get your Mastodon profile information
-- **MASTODON_CREATE_POST** — Create a new post (`status`, `inReplyToId` optional, `visibility`)
+- **MASTODON_CREATE_POST** — Create a new post, optionally with up to 4 media attachments (`status`, `inReplyToId` optional, `visibility`, `media`)
 - **MASTODON_REPLY_TO_POST** — Reply to a Mastodon post (`status`, `inReplyToId`)
 - **MASTODON_SEARCH_POSTS** — Search for posts on your instance (`query`, `limit`)
 - **MASTODON_BOOST_POST** — Reblog/boost a post (`statusId`)
 - **MASTODON_FAVOURITE_POST** — Favorite/like a post (`statusId`)
 - **MASTODON_DELETE_POST** — Delete a post (`statusId`)
+
+> **Note:** `media` take `{ content, filename?, description? }[]` with `content` as base64, uploaded via `/api/v2/media` and attached by ID.
 
 ### TikTok
 
@@ -445,7 +458,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **TIKTOK_PHOTO_POST** — Create a photo/carousel post (`photoUrls`, `title`, `description`, `privacyLevel`)
 - **TIKTOK_GET_POST_STATUS** — Check the publishing status of a video or photo post (`publishId`)
 
-> **Note:** TikTok's Content Posting API requires app approval from [TikTok for Developers](https://developers.tiktok.com). Videos are pulled from a public URL by TikTok's servers rather than uploaded directly.
+> **Note:** TikTok's Content Posting API requires app approval from [TikTok for Developers](https://developers.tiktok.com). Videos are pulled from a public URL by TikTok's servers (`PULL_FROM_URL`) rather than uploaded directly — TikTok's alternative `FILE_UPLOAD` mode (chunked byte upload for base64/local content) is not yet implemented here; if you need it, it's the same style of lease-then-PUT flow used for LinkedIn/Reddit media above.
 
 ### YouTube
 
@@ -456,17 +469,20 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **YOUTUBE_GET_COMMENTS** — Get top-level comments on a video (`videoId`, `maxResults`)
 - **YOUTUBE_POST_COMMENT** — Post a comment on a video (`videoId`, `text`)
 - **YOUTUBE_UPDATE_VIDEO** — Update a video's title, description, and tags (`videoId`, `title`, `description`, `tags`, `categoryId`)
+- **YOUTUBE_UPLOAD_VIDEO** — Upload a video to the authenticated user's channel (`content`, `contentType`, `title`, `description`, `tags`, `categoryId`, `privacyStatus`)
 
-> **Note:** YouTube requires an OAuth 2.0 access token with the `https://www.googleapis.com/auth/youtube` scope. Enable the **YouTube Data API v3** in your [Google Cloud Console](https://console.cloud.google.com) project. Video uploads are not supported via this API — use the YouTube Studio or resumable upload flow directly.
+> **Note:** YouTube requires an OAuth 2.0 access token with the `https://www.googleapis.com/auth/youtube` scope (or `.upload` for uploads). Enable the **YouTube Data API v3** in your [Google Cloud Console](https://console.cloud.google.com) project. `YOUTUBE_UPLOAD_VIDEO` uses a single-request multipart upload (not YouTube's resumable/chunked protocol) — appropriate since `content` arrives as one base64 tool argument rather than a large local file; very large videos may need the resumable flow instead.
 
 ### Pinterest
 
 - **PINTEREST_GET_BOARDS** — List all boards on your Pinterest account (`pageSize`)
 - **PINTEREST_CREATE_BOARD** — Create a new board (`name`, `description`)
-- **PINTEREST_CREATE_PIN** — Create a pin on a board (`boardId`, `title`, `description`, `imageUrl`, `link`)
-- **PINTEREST_GET_PIN** — Get details of a specific pin (`pinId`)
+- **PINTEREST_CREATE_PIN** — Create a pin on a board (`boardId`, `title`, `description`, `image`, `imageContentType`, `link`)
+- **PINTEREST_GET_PIN** — Get details of a specific pin, including media URLs (`pinId`)
 - **PINTEREST_GET_BOARD_PINS** — List all pins on a board (`boardId`, `pageSize`)
 - **PINTEREST_DELETE_PIN** — Delete a pin by ID (`pinId`)
+
+> **Note:** `image` takes either a public URL or base64-encoded bytes — unlike most platforms, Pinterest's v5 API accepts base64 directly in the pin body (`image_base64`), no separate upload step needed.
 
 ### Medium
 
@@ -489,7 +505,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **DEVTO_GET_ARTICLE** — Get a specific article by ID including its full Markdown body (`id`)
 - **DEVTO_UPDATE_ARTICLE** — Update an existing article (`id`, `title`, `bodyMarkdown`, `published`, `tags`, `description`, `canonicalUrl`)
 
-> **Note:** Get your API key at [dev.to/settings/extensions](https://dev.to/settings/extensions). Set `published: false` to save as a draft.
+> **Note:** Get your API key at [dev.to/settings/extensions](https://dev.to/settings/extensions). Set `published: false` to save as a draft. `mainImage` is a URL only — Dev.to's public API has no image upload endpoint; body images must already be hosted and linked in the Markdown.
 
 ### Hashnode
 
@@ -497,7 +513,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **HASHNODE_GET_POSTS** — List recent posts from a Hashnode publication (`first`, `publicationId`)
 - **HASHNODE_CREATE_POST** — Publish a post to a Hashnode publication (`title`, `contentMarkdown`, `tags`, `subtitle`, `coverImageUrl`, `publicationId`)
 
-> **Note:** Tags are passed as `[{ name, slug }]` objects. Get your publication ID via `HASHNODE_GET_PUBLICATION` or from the Hashnode dashboard URL.
+> **Note:** Tags are passed as `[{ name, slug }]` objects. Get your publication ID via `HASHNODE_GET_PUBLICATION` or from the Hashnode dashboard URL. `coverImageURL` is a URL only — Hashnode's GraphQL API expects an already-hosted image, not a byte upload.
 
 ### Beehiiv
 
@@ -505,16 +521,16 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **BEEHIIV_GET_POSTS** — List posts with send stats including open rate (`page`, `limit`, `publicationId`)
 - **BEEHIIV_GET_SUBSCRIBERS** — List subscribers with status and tier info (`page`, `limit`, `publicationId`)
 
-> **Note:** Set `status: "confirmed"` to schedule the post for sending. `status: "draft"` saves it without sending.
+> **Note:** Set `status: "confirmed"` to schedule the post for sending. `status: "draft"` saves it without sending. `bodyHtml` is raw HTML — Beehiiv's public API has no image/attachment upload; inline images must already be hosted.
 
 ### Ghost
 
-- **GHOST_CREATE_POST** — Create a post on a Ghost blog (`title`, `html`, `status`, `tags`, `excerpt`, `publishedAt`)
+- **GHOST_CREATE_POST** — Create a post on a Ghost blog, optionally with a feature image (`title`, `html`, `status`, `tags`, `excerpt`, `publishedAt`, `featureImage`, `featureImageFilename`)
 - **GHOST_GET_POSTS** — List posts filtered by status (`page`, `limit`, `status`)
 - **GHOST_UPDATE_POST** — Update an existing post — requires the post's current `updated_at` timestamp for optimistic locking (`id`, `updatedAt`, `title`, `html`, `status`, `tags`, `excerpt`)
 - **GHOST_DELETE_POST** — Permanently delete a post (`id`)
 
-> **Note:** The Admin API key (`GHOST_ADMIN_API_KEY`) must be in `id:secret` format from Ghost Admin → Settings → Integrations. Ghost uses JWT authentication which is generated automatically per request.
+> **Note:** The Admin API key (`GHOST_ADMIN_API_KEY`) must be in `id:secret` format from Ghost Admin → Settings → Integrations. Ghost uses JWT authentication which is generated automatically per request. `featureImage` takes a public URL or base64-encoded bytes; base64 is uploaded via Ghost's `/images/upload/` endpoint first.
 
 ### Twitch
 
@@ -529,11 +545,11 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 ### Tumblr
 
 - **TUMBLR_GET_BLOG_INFO** — Get blog info including title, description, post count, and follower count (`blogIdentifier`)
-- **TUMBLR_CREATE_POST** — Create a text post using the Neue Post Format (`text`, `title`, `tags`, `state`, `blogIdentifier`)
+- **TUMBLR_CREATE_POST** — Create a post using the Neue Post Format, optionally with an image (`text`, `title`, `tags`, `state`, `blogIdentifier`, `image`, `imageContentType`)
 - **TUMBLR_GET_POSTS** — Get posts from a blog, optionally filtered by type (`offset`, `limit`, `type`, `blogIdentifier`)
 - **TUMBLR_DELETE_POST** — Delete a post by ID (`postId`, `blogIdentifier`)
 
-> **Note:** Tumblr uses OAuth 2.0 Bearer tokens. Set `state: "draft"` or `"queue"` to save without publishing immediately.
+> **Note:** Tumblr uses OAuth 2.0 Bearer tokens. Set `state: "draft"` or `"queue"` to save without publishing immediately. `image` takes a public URL (referenced directly in the NPF content block) or base64-encoded bytes (uploaded inline via a multipart request with an `identifier`-referenced block).
 
 ## Per-org / Multi-account Usage
 
@@ -586,11 +602,13 @@ When `mailer` and `fromAddress` are omitted, the tool falls back to the env var 
 
 ## Proxy Support
 
-`DiscordService`, `SlackService`, and `TelegramService` accept an optional `proxyUrl` in their credentials (e.g. `new DiscordService({ botToken, proxyUrl: "http://user:pass@host:port" })`), routing that account's API calls through an HTTP(S) proxy — useful for a multi-tenant host that wants each connected account's traffic to originate from a distinct, consistent IP. This is a constructor-level option for programmatic/library consumers (not an MCP tool parameter, since it's server-operator infrastructure rather than message content).
+Most services accept an optional `proxyUrl` in their credentials (e.g. `new DiscordService({ botToken, proxyUrl: "http://user:pass@host:port" })`), routing that account's API calls through an HTTP(S) proxy — useful for a multi-tenant host that wants each connected account's traffic to originate from a distinct, consistent IP. This is a constructor-level option for programmatic/library consumers (not an MCP tool parameter, since it's server-operator infrastructure rather than message content).
+
+Supported today: Discord, Slack, Telegram, Twitter/X, Instagram, Facebook, WhatsApp, Threads, LinkedIn, Reddit, Pinterest, Mastodon, YouTube, Ghost, Tumblr. Not yet wired: Bluesky (`@atproto/api`'s `BskyAgent` doesn't expose a documented fetch/agent override), TikTok, Medium, Dev.to, Hashnode, Beehiiv, Twitch — these currently ignore any `proxyUrl` passed to them.
 
 Two mechanisms are used depending on how each service talks to its platform, since passing the wrong one is a silent no-op rather than an error:
-- `createProxyDispatcher()` (undici `ProxyAgent`) for services using raw `fetch()`.
-- `createProxyAgent()` (`https-proxy-agent`) for services built on SDKs that take a classic `http.Agent` (Slack's `@slack/web-api`, Telegram's `telegraf`).
+- `createProxyDispatcher()` (undici `ProxyAgent`) for services using raw `fetch()` — most of the list above.
+- `createProxyAgent()` (`https-proxy-agent`) for services built on SDKs that take a classic `http.Agent` (Slack's `@slack/web-api`, Telegram's `telegraf`, Twitter's `twitter-api-v2` via its `httpAgent` client option).
 
 Both are exported from `social-mcp/dist/lib/proxy.js` if you need to build the agent/dispatcher yourself.
 

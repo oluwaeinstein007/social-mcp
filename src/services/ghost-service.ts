@@ -3,6 +3,11 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
+
+const imageUploadSchema = z.object({
+	images: z.array(z.object({ url: z.string() })),
+});
 
 const postSchema = z.object({
 	id: z.string(),
@@ -13,19 +18,25 @@ const postSchema = z.object({
 	published_at: z.string().nullable().optional(),
 	updated_at: z.string().nullable().optional(),
 	excerpt: z.string().nullable().optional(),
-	tags: z.array(z.object({ id: z.string(), name: z.string(), slug: z.string() })).optional(),
+	tags: z
+		.array(z.object({ id: z.string(), name: z.string(), slug: z.string() }))
+		.optional(),
 });
 
 const postsResponseSchema = z.object({
 	posts: z.array(postSchema),
-	meta: z.object({
-		pagination: z.object({
-			page: z.number(),
-			limit: z.number(),
-			pages: z.number(),
-			total: z.number(),
-		}).optional(),
-	}).optional(),
+	meta: z
+		.object({
+			pagination: z
+				.object({
+					page: z.number(),
+					limit: z.number(),
+					pages: z.number(),
+					total: z.number(),
+				})
+				.optional(),
+		})
+		.optional(),
 });
 
 const singlePostResponseSchema = z.object({
@@ -35,19 +46,24 @@ const singlePostResponseSchema = z.object({
 export interface GhostCredentials {
 	siteUrl: string;
 	adminApiKey: string;
+	proxyUrl?: string;
 }
 
 export class GhostService {
 	private siteUrl: string;
 	private keyId: string;
 	private keySecret: string;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: GhostCredentials) {
 		const siteUrl = credentials?.siteUrl ?? config.ghost.siteUrl;
 		const adminApiKey = credentials?.adminApiKey ?? config.ghost.adminApiKey;
 
 		if (!siteUrl || !adminApiKey) {
-			throw new CredentialsError("Ghost", ["GHOST_SITE_URL", "GHOST_ADMIN_API_KEY"]);
+			throw new CredentialsError("Ghost", [
+				"GHOST_SITE_URL",
+				"GHOST_ADMIN_API_KEY",
+			]);
 		}
 
 		const parts = adminApiKey.split(":");
@@ -58,12 +74,17 @@ export class GhostService {
 		this.siteUrl = siteUrl.replace(/\/$/, "");
 		this.keyId = parts[0];
 		this.keySecret = parts[1];
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	private generateJwt(): string {
 		const now = Math.floor(Date.now() / 1000);
-		const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT", kid: this.keyId })).toString("base64url");
-		const payload = Buffer.from(JSON.stringify({ iat: now, exp: now + 300, aud: "/admin/" })).toString("base64url");
+		const header = Buffer.from(
+			JSON.stringify({ alg: "HS256", typ: "JWT", kid: this.keyId }),
+		).toString("base64url");
+		const payload = Buffer.from(
+			JSON.stringify({ iat: now, exp: now + 300, aud: "/admin/" }),
+		).toString("base64url");
 		const signing = `${header}.${payload}`;
 		const signature = createHmac("sha256", Buffer.from(this.keySecret, "hex"))
 			.update(signing)
@@ -83,15 +104,49 @@ export class GhostService {
 		return `${this.siteUrl}/ghost/api/admin`;
 	}
 
-	async getPosts(page = 1, limit = 10, status: "all" | "published" | "draft" = "all") {
-		const params = new URLSearchParams({ page: String(page), limit: String(limit), filter: `status:${status}` });
+	async getPosts(
+		page = 1,
+		limit = 10,
+		status: "all" | "published" | "draft" = "all",
+	) {
+		const params = new URLSearchParams({
+			page: String(page),
+			limit: String(limit),
+			filter: `status:${status}`,
+		});
 		if (status === "all") params.delete("filter");
 		else params.set("filter", `status:${status}`);
 		return fetchJson(
 			`${this.adminBase}/posts?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			postsResponseSchema,
 		);
+	}
+
+	// Ghost's Admin API supports image upload as its own endpoint — the returned
+	// URL is then just set on `feature_image` (or embedded in html/lexical) like any
+	// other image, no special reference type needed elsewhere.
+	async uploadImage(content: string, filename = "image.jpg"): Promise<string> {
+		const formData = new FormData();
+		const buffer = Buffer.from(content, "base64");
+		formData.append("file", new Blob([buffer]), filename);
+		formData.append("purpose", "image");
+
+		const response = await fetch(`${this.adminBase}/images/upload/`, {
+			method: "POST",
+			headers: {
+				Authorization: this.headers.Authorization ?? "",
+				"Accept-Version": "v5.0",
+			},
+			body: formData,
+			dispatcher: this.dispatcher,
+		} as RequestInit);
+		if (!response.ok) {
+			throw new Error(
+				`Ghost image upload error (${response.status}): ${await response.text()}`,
+			);
+		}
+		return imageUploadSchema.parse(await response.json()).images[0]?.url ?? "";
 	}
 
 	async createPost(
@@ -102,6 +157,7 @@ export class GhostService {
 		tags: string[] = [],
 		excerpt?: string,
 		publishedAt?: string,
+		featureImage?: string,
 	) {
 		const post: Record<string, unknown> = {
 			title,
@@ -112,6 +168,7 @@ export class GhostService {
 		if (lexical) post.lexical = lexical;
 		if (excerpt) post.custom_excerpt = excerpt;
 		if (publishedAt) post.published_at = publishedAt;
+		if (featureImage) post.feature_image = featureImage;
 
 		return fetchJson(
 			`${this.adminBase}/posts`,
@@ -119,6 +176,7 @@ export class GhostService {
 				method: "POST",
 				headers: this.headers,
 				body: JSON.stringify({ posts: [post] }),
+				dispatcher: this.dispatcher,
 			},
 			singlePostResponseSchema,
 		);
@@ -144,6 +202,7 @@ export class GhostService {
 				method: "PUT",
 				headers: this.headers,
 				body: JSON.stringify({ posts: [body] }),
+				dispatcher: this.dispatcher,
 			},
 			singlePostResponseSchema,
 		);
@@ -153,9 +212,12 @@ export class GhostService {
 		const response = await fetch(`${this.adminBase}/posts/${id}`, {
 			method: "DELETE",
 			headers: this.headers,
-		});
+			dispatcher: this.dispatcher,
+		} as RequestInit);
 		if (!response.ok) {
-			throw new Error(`Ghost API error ${response.status}: ${response.statusText}`);
+			throw new Error(
+				`Ghost API error ${response.status}: ${response.statusText}`,
+			);
 		}
 	}
 }

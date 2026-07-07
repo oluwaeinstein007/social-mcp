@@ -43,6 +43,7 @@ import { sendMessageTool as discordSendMessageTool } from "./tools/discord-tools
 import { sendBulkEmailTool } from "./tools/email-tools/send-bulk-email.js";
 import { sendEmailTool } from "./tools/email-tools/send-email.js";
 import { createPostTool as facebookCreatePostTool } from "./tools/facebook-tools/create-post.js";
+import { createVideoPostTool as facebookCreateVideoPostTool } from "./tools/facebook-tools/create-video-post.js";
 import { getPostsTool as facebookGetPostsTool } from "./tools/facebook-tools/get-posts.js";
 import { createPostTool as ghostCreatePostTool } from "./tools/ghost-tools/create-post.js";
 import { deletePostTool as ghostDeletePostTool } from "./tools/ghost-tools/delete-post.js";
@@ -126,6 +127,7 @@ import { listChannelVideosTool as youtubeListChannelVideosTool } from "./tools/y
 import { postCommentTool as youtubePostCommentTool } from "./tools/youtube-tools/post-comment.js";
 import { searchVideosTool as youtubeSearchVideosTool } from "./tools/youtube-tools/search-videos.js";
 import { updateVideoTool as youtubeUpdateVideoTool } from "./tools/youtube-tools/update-video.js";
+import { uploadVideoTool as youtubeUploadVideoTool } from "./tools/youtube-tools/upload-video.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as {
@@ -210,6 +212,7 @@ async function main() {
 
 	// Facebook
 	server.addTool(facebookCreatePostTool);
+	server.addTool(facebookCreateVideoPostTool);
 	server.addTool(facebookGetPostsTool);
 
 	// Instagram
@@ -260,6 +263,7 @@ async function main() {
 	server.addTool(youtubeGetCommentsTool);
 	server.addTool(youtubePostCommentTool);
 	server.addTool(youtubeUpdateVideoTool);
+	server.addTool(youtubeUploadVideoTool);
 
 	// Bluesky
 	server.addTool(blueskyCreatePostTool);

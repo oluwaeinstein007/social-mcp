@@ -2,6 +2,13 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
+
+const videoUploadSchema = z.object({
+	id: z.string().optional(),
+	snippet: z.object({ title: z.string().optional() }).optional(),
+	status: z.object({ uploadStatus: z.string().optional() }).optional(),
+});
 
 const channelSchema = z.object({
 	items: z
@@ -156,11 +163,24 @@ const videoUpdateSchema = z.object({
 
 export interface YouTubeCredentials {
 	accessToken: string;
+	proxyUrl?: string;
+}
+
+export interface YouTubeVideoUpload {
+	/** Base64-encoded video bytes. */
+	content: string;
+	contentType?: string;
+	title: string;
+	description?: string;
+	tags?: string[];
+	categoryId?: string;
+	privacyStatus?: "public" | "unlisted" | "private";
 }
 
 export class YouTubeService {
 	private baseUrl = config.youtube.baseUrl;
 	private headers: Record<string, string>;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: YouTubeCredentials) {
 		const accessToken = credentials?.accessToken ?? config.youtube.accessToken;
@@ -171,6 +191,46 @@ export class YouTubeService {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${accessToken}`,
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
+	}
+
+	// Multipart (not resumable) upload — appropriate here since video bytes arrive as
+	// a single base64 MCP tool argument rather than a large local file needing chunking.
+	async uploadVideo(video: YouTubeVideoUpload) {
+		const boundary = `smcp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+		const metadata = {
+			snippet: {
+				title: video.title,
+				description: video.description ?? "",
+				tags: video.tags,
+				categoryId: video.categoryId ?? "22",
+			},
+			status: { privacyStatus: video.privacyStatus ?? "unlisted" },
+		};
+		const videoBuffer = Buffer.from(video.content, "base64");
+		const preamble = Buffer.from(
+			`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${video.contentType ?? "video/*"}\r\n\r\n`,
+			"utf8",
+		);
+		const closing = Buffer.from(`\r\n--${boundary}--`, "utf8");
+		const body = Buffer.concat([preamble, videoBuffer, closing]);
+
+		const uploadUrl = `${this.baseUrl.replace("/youtube/v3", "/upload/youtube/v3")}/videos?uploadType=multipart&part=snippet,status`;
+		const response = await fetch(uploadUrl, {
+			method: "POST",
+			headers: {
+				Authorization: this.headers.Authorization ?? "",
+				"Content-Type": `multipart/related; boundary=${boundary}`,
+			},
+			body,
+			dispatcher: this.dispatcher,
+		} as RequestInit);
+		if (!response.ok) {
+			throw new Error(
+				`YouTube upload error (${response.status}): ${await response.text()}`,
+			);
+		}
+		return videoUploadSchema.parse(await response.json());
 	}
 
 	async getChannelInfo(channelId?: string) {
@@ -180,7 +240,7 @@ export class YouTubeService {
 		});
 		return fetchJson(
 			`${this.baseUrl}/channels?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			channelSchema,
 		);
 	}
@@ -195,7 +255,7 @@ export class YouTubeService {
 		});
 		return fetchJson(
 			`${this.baseUrl}/search?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			searchSchema,
 		);
 	}
@@ -207,7 +267,7 @@ export class YouTubeService {
 		});
 		return fetchJson(
 			`${this.baseUrl}/videos?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			videoSchema,
 		);
 	}
@@ -227,7 +287,7 @@ export class YouTubeService {
 		});
 		return fetchJson(
 			`${this.baseUrl}/search?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			searchSchema,
 		);
 	}
@@ -241,7 +301,7 @@ export class YouTubeService {
 		});
 		return fetchJson(
 			`${this.baseUrl}/commentThreads?${params}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			commentThreadSchema,
 		);
 	}
@@ -258,7 +318,12 @@ export class YouTubeService {
 		const params = new URLSearchParams({ part: "snippet" });
 		return fetchJson(
 			`${this.baseUrl}/commentThreads?${params}`,
-			{ method: "POST", headers: this.headers, body: JSON.stringify(body) },
+			{
+				method: "POST",
+				headers: this.headers,
+				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
+			},
 			commentInsertSchema,
 		);
 	}
@@ -282,7 +347,12 @@ export class YouTubeService {
 		const params = new URLSearchParams({ part: "snippet" });
 		return fetchJson(
 			`${this.baseUrl}/videos?${params}`,
-			{ method: "PUT", headers: this.headers, body: JSON.stringify(body) },
+			{
+				method: "PUT",
+				headers: this.headers,
+				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
+			},
 			videoUpdateSchema,
 		);
 	}

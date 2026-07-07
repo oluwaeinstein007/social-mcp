@@ -14,6 +14,11 @@ const createPostParams = z.object({
 		.enum(["PUBLIC", "CONNECTIONS", "LOGGED_IN"])
 		.default("PUBLIC")
 		.describe("Who can see the post"),
+	image: z
+		.string()
+		.optional()
+		.describe("Base64-encoded image bytes to attach."),
+	imageTitle: z.string().optional().describe("Title/alt text for the image."),
 });
 
 type CreatePostParams = z.infer<typeof createPostParams>;
@@ -21,7 +26,7 @@ type CreatePostParams = z.infer<typeof createPostParams>;
 export const createPostTool = {
 	name: "CREATE_LINKEDIN_POST",
 	description:
-		"Create a LinkedIn UGC post on behalf of a member or organization",
+		"Create a LinkedIn UGC post on behalf of a member or organization, optionally with an image",
 	parameters: createPostParams,
 	execute: async (params: CreatePostParams) => {
 		try {
@@ -29,6 +34,9 @@ export const createPostTool = {
 				params.authorUrn,
 				params.text,
 				params.visibility,
+				params.image
+					? { content: params.image, title: params.imageTitle }
+					: undefined,
 			);
 			return `Post created successfully on LinkedIn!\n\nPost ID: ${post.id}`;
 		} catch (error) {

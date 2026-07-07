@@ -1,23 +1,48 @@
 import { TwitterApi } from "twitter-api-v2";
 import { CredentialsError } from "../lib/errors.js";
+import { createProxyAgent } from "../lib/proxy.js";
 
 export interface TwitterCredentials {
-	appKey: string;
-	appSecret: string;
-	accessToken: string;
-	accessSecret: string;
+	// OAuth 1.0a (4-legged) — required together, gives full v1.1 + v2 access.
+	appKey?: string;
+	appSecret?: string;
+	accessToken?: string;
+	accessSecret?: string;
+	// OAuth 2.0 user-context access token (e.g. from an authorization-code+PKCE flow)
+	// — an alternative to the four OAuth 1.0a fields above when that's all a caller
+	// has. X accepts this bearer token on both v2 endpoints and v1.1 media upload.
+	bearerToken?: string;
+	/** Routes API calls through this proxy (e.g. per-tenant IP isolation). */
+	proxyUrl?: string;
+}
+
+export interface TwitterMediaAttachment {
+	/** Base64-encoded image/gif/video bytes. Max 4 per tweet (X's own limit). */
+	content: string;
+	mimeType: string;
 }
 
 export class TwitterService {
 	private client: TwitterApi;
 
 	constructor(credentials?: TwitterCredentials) {
+		const bearerToken =
+			credentials?.bearerToken ?? process.env.TWITTER_BEARER_TOKEN;
 		const appKey = credentials?.appKey ?? process.env.TWITTER_APP_KEY;
 		const appSecret = credentials?.appSecret ?? process.env.TWITTER_APP_SECRET;
 		const accessToken =
 			credentials?.accessToken ?? process.env.TWITTER_ACCESS_TOKEN;
 		const accessSecret =
 			credentials?.accessSecret ?? process.env.TWITTER_ACCESS_SECRET;
+
+		const clientOptions = {
+			httpAgent: createProxyAgent(credentials?.proxyUrl),
+		};
+
+		if (bearerToken) {
+			this.client = new TwitterApi(bearerToken, clientOptions);
+			return;
+		}
 
 		const missing: string[] = [];
 		if (!appKey) missing.push("TWITTER_APP_KEY");
@@ -26,19 +51,38 @@ export class TwitterService {
 		if (!accessSecret) missing.push("TWITTER_ACCESS_SECRET");
 
 		if (missing.length > 0) {
-			throw new CredentialsError("Twitter", missing);
+			throw new CredentialsError("Twitter", [
+				...missing,
+				"(or TWITTER_BEARER_TOKEN)",
+			]);
 		}
 
-		this.client = new TwitterApi({
-			appKey: appKey as string,
-			appSecret: appSecret as string,
-			accessToken: accessToken as string,
-			accessSecret: accessSecret as string,
-		});
+		this.client = new TwitterApi(
+			{
+				appKey: appKey as string,
+				appSecret: appSecret as string,
+				accessToken: accessToken as string,
+				accessSecret: accessSecret as string,
+			},
+			clientOptions,
+		);
 	}
 
-	async sendTweet(text: string) {
+	async sendTweet(text: string, media?: TwitterMediaAttachment[]) {
 		try {
+			if (media?.length) {
+				const mediaIds = await Promise.all(
+					media.map((m) =>
+						this.client.v1.uploadMedia(Buffer.from(m.content, "base64"), {
+							mimeType: m.mimeType,
+						}),
+					),
+				);
+				const { data: createdTweet } = await this.client.v2.tweet(text, {
+					media: { media_ids: mediaIds as [string] },
+				});
+				return createdTweet;
+			}
 			const { data: createdTweet } = await this.client.v2.tweet(text);
 			return createdTweet;
 		} catch (error) {
