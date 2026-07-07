@@ -436,7 +436,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 - **BLUESKY_LIKE_POST** — Like a post (`uri`, `cid`)
 - **BLUESKY_SEARCH_POSTS** — Search for posts on Bluesky (`query`, `limit`)
 
-> **Note:** `images` take `{ content, mimeType, alt? }[]` with `content` as base64 — AT Proto has no URL-reference option, every image is uploaded as a blob (`uploadBlob`) and referenced in the post's embed.
+> **Note:** `images` take `{ content, mimeType, alt? }[]` with `content` as base64 — AT Proto has no URL-reference option, every image is uploaded as a blob (`uploadBlob`) and referenced in the post's embed. For library consumers managing their own session (e.g. an app that already exchanged an identifier/app-password for a session and refreshes it independently), `BlueskyCredentials` also accepts `{ did, handle?, accessJwt, refreshJwt }` to resume that session instead of logging in fresh — call `getSession()` afterward to read back the session in case AT Proto rotated the refresh token during the call, so you can persist the new one.
 
 ### Mastodon
 
@@ -604,13 +604,14 @@ When `mailer` and `fromAddress` are omitted, the tool falls back to the env var 
 
 Most services accept an optional `proxyUrl` in their credentials (e.g. `new DiscordService({ botToken, proxyUrl: "http://user:pass@host:port" })`), routing that account's API calls through an HTTP(S) proxy — useful for a multi-tenant host that wants each connected account's traffic to originate from a distinct, consistent IP. This is a constructor-level option for programmatic/library consumers (not an MCP tool parameter, since it's server-operator infrastructure rather than message content).
 
-Supported today: Discord, Slack, Telegram, Twitter/X, Instagram, Facebook, WhatsApp, Threads, LinkedIn, Reddit, Pinterest, Mastodon, YouTube, Ghost, Tumblr. Not yet wired: Bluesky (`@atproto/api`'s `BskyAgent` doesn't expose a documented fetch/agent override), TikTok, Medium, Dev.to, Hashnode, Beehiiv, Twitch — these currently ignore any `proxyUrl` passed to them.
+Supported today: Discord, Slack, Telegram, Twitter/X, Instagram, Facebook, WhatsApp, Threads, LinkedIn, Reddit, Pinterest, Mastodon, YouTube, Ghost, Tumblr, TikTok, Medium, Bluesky. Not yet wired: Dev.to, Hashnode, Beehiiv, Twitch — these currently ignore any `proxyUrl` passed to them.
 
-Two mechanisms are used depending on how each service talks to its platform, since passing the wrong one is a silent no-op rather than an error:
+Three mechanisms are used depending on how each service talks to its platform, since passing the wrong one is a silent no-op rather than an error:
 - `createProxyDispatcher()` (undici `ProxyAgent`) for services using raw `fetch()` — most of the list above.
 - `createProxyAgent()` (`https-proxy-agent`) for services built on SDKs that take a classic `http.Agent` (Slack's `@slack/web-api`, Telegram's `telegraf`, Twitter's `twitter-api-v2` via its `httpAgent` client option).
+- Bluesky's `BskyAgent` takes a custom `fetch` function directly (`AtpAgentOptions.fetch`) — `BlueskyService` wraps `createProxyDispatcher()`'s dispatcher in one when `proxyUrl` is set.
 
-Both are exported from `social-mcp/dist/lib/proxy.js` if you need to build the agent/dispatcher yourself.
+`createProxyDispatcher`/`createProxyAgent` are exported from `social-mcp/dist/lib/proxy.js` if you need to build the agent/dispatcher yourself.
 
 ## Development
 

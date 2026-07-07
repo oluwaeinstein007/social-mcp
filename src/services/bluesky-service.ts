@@ -1,11 +1,22 @@
 import { BskyAgent } from "@atproto/api";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 export interface BlueskyCredentials {
-	identifier: string;
-	appPassword: string;
+	// App-password login — BlueskyService logs in itself.
+	identifier?: string;
+	appPassword?: string;
+	// Alternative to the above: resume an existing session (e.g. from an
+	// authorization flow managed elsewhere) instead of logging in fresh. Requires
+	// did + accessJwt + refreshJwt; handle defaults to did if not supplied.
+	did?: string;
+	handle?: string;
+	accessJwt?: string;
+	refreshJwt?: string;
 	service?: string;
+	/** Routes API calls through this proxy (e.g. per-tenant IP isolation). */
+	proxyUrl?: string;
 }
 
 export interface BlueskyImage {
@@ -15,35 +26,97 @@ export interface BlueskyImage {
 	alt?: string;
 }
 
+export interface BlueskySession {
+	did: string;
+	handle: string;
+	accessJwt: string;
+	refreshJwt: string;
+}
+
 export class BlueskyService {
 	private agent: BskyAgent;
-	private identifier: string;
-	private appPassword: string;
+	private identifier?: string;
+	private appPassword?: string;
+	private resumeSessionData?: {
+		did: string;
+		handle: string;
+		accessJwt: string;
+		refreshJwt: string;
+		active: true;
+	};
 	private loggedIn = false;
+	private latestSession?: BlueskySession;
 
 	constructor(credentials?: BlueskyCredentials) {
 		const identifier = credentials?.identifier ?? config.bluesky.identifier;
 		const appPassword = credentials?.appPassword ?? config.bluesky.appPassword;
 		const service = credentials?.service ?? config.bluesky.service;
-		if (!identifier || !appPassword) {
+
+		if (credentials?.did && credentials.accessJwt && credentials.refreshJwt) {
+			this.resumeSessionData = {
+				did: credentials.did,
+				handle: credentials.handle ?? credentials.did,
+				accessJwt: credentials.accessJwt,
+				refreshJwt: credentials.refreshJwt,
+				active: true,
+			};
+		} else if (!identifier || !appPassword) {
 			throw new CredentialsError("Bluesky", [
 				"BLUESKY_IDENTIFIER",
 				"BLUESKY_APP_PASSWORD",
+				"(or did/accessJwt/refreshJwt to resume a session)",
 			]);
 		}
 		this.identifier = identifier;
 		this.appPassword = appPassword;
-		this.agent = new BskyAgent({ service });
+
+		const dispatcher = createProxyDispatcher(credentials?.proxyUrl);
+		this.agent = new BskyAgent({
+			service,
+			// AT Proto rotates the refresh token on use — this is the SDK's own hook for
+			// finding out, so a session-resume caller can persist the new one via
+			// getSession() rather than silently working with a token that's gone stale.
+			persistSession: (_evt, session) => {
+				if (session) {
+					this.latestSession = {
+						did: session.did,
+						handle: session.handle,
+						accessJwt: session.accessJwt,
+						refreshJwt: session.refreshJwt,
+					};
+				}
+			},
+			...(dispatcher
+				? {
+						fetch: ((input: RequestInfo | URL, init?: RequestInit) =>
+							fetch(input, {
+								...init,
+								dispatcher,
+							} as RequestInit)) as typeof globalThis.fetch,
+					}
+				: {}),
+		});
 	}
 
 	private async ensureLoggedIn() {
-		if (!this.loggedIn) {
+		if (this.loggedIn) return;
+		if (this.resumeSessionData) {
+			await this.agent.resumeSession(this.resumeSessionData);
+		} else if (this.identifier && this.appPassword) {
 			await this.agent.login({
 				identifier: this.identifier,
 				password: this.appPassword,
 			});
-			this.loggedIn = true;
+		} else {
+			throw new Error("Bluesky credentials are missing");
 		}
+		this.loggedIn = true;
+	}
+
+	// Only meaningful in session-resume mode: the (possibly refreshed) session after
+	// an operation, for the caller to persist if it rotated mid-call.
+	getSession(): BlueskySession | undefined {
+		return this.latestSession;
 	}
 
 	async createPost(text: string, images?: BlueskyImage[]) {

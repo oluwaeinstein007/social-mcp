@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.10.0
+
+### Minor Changes
+
+- `BlueskyCredentials` now accepts `{ did, handle?, accessJwt, refreshJwt }` to resume an existing AT Proto session instead of requiring `identifier`/`appPassword` login on every call — for callers managing their own session lifecycle (e.g. connect-time login + external refresh). A new `getSession()` reads back the (possibly refreshed) session after an operation, since AT Proto rotates the refresh token on use, so callers can persist the new one. Also added `proxyUrl` support via `BskyAgent`'s custom `fetch` option, completing proxy coverage across every fetch/SDK-based service in the package.
+
 ## 2.9.0
 
 ### Minor Changes
