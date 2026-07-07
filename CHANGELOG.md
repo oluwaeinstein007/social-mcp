@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.7.1
+
+### Patch Changes
+
+- Added `proxyUrl` support to `TikTokService` and `MediumService`, completing proxy coverage across all fetch-based services except Bluesky.
+
 ## 2.7.0
 
 ### Minor Changes

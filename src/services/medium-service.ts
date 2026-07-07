@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const mediumUserSchema = z.object({
 	id: z.string(),
@@ -32,11 +33,13 @@ const mediumPostResponseSchema = z.object({
 
 export interface MediumCredentials {
 	accessToken: string;
+	proxyUrl?: string;
 }
 
 export class MediumService {
 	private baseUrl = config.medium.baseUrl;
 	private headers: Record<string, string>;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: MediumCredentials) {
 		const accessToken = credentials?.accessToken ?? config.medium.accessToken;
@@ -48,12 +51,13 @@ export class MediumService {
 			Authorization: `Bearer ${accessToken}`,
 			Accept: "application/json",
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	async getUser() {
 		return fetchJson(
 			`${this.baseUrl}/me`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			mediumUserResponseSchema,
 		);
 	}
@@ -81,6 +85,7 @@ export class MediumService {
 				method: "POST",
 				headers: this.headers,
 				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
 			},
 			mediumPostResponseSchema,
 		);

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const tiktokCreatorInfoSchema = z.object({
 	data: z.object({
@@ -79,11 +80,13 @@ const tiktokStatusSchema = z.object({
 
 export interface TikTokCredentials {
 	accessToken: string;
+	proxyUrl?: string;
 }
 
 export class TikTokService {
 	private baseUrl = config.tiktok.baseUrl;
 	private headers: Record<string, string>;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: TikTokCredentials) {
 		const accessToken = credentials?.accessToken ?? config.tiktok.accessToken;
@@ -94,12 +97,18 @@ export class TikTokService {
 			"Content-Type": "application/json; charset=UTF-8",
 			Authorization: `Bearer ${accessToken}`,
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	async queryCreatorInfo() {
 		return fetchJson(
 			`${this.baseUrl}/post/publish/creator_info/query/`,
-			{ method: "POST", headers: this.headers, body: JSON.stringify({}) },
+			{
+				method: "POST",
+				headers: this.headers,
+				body: JSON.stringify({}),
+				dispatcher: this.dispatcher,
+			},
 			tiktokCreatorInfoSchema,
 		);
 	}
@@ -127,7 +136,12 @@ export class TikTokService {
 		};
 		return fetchJson(
 			`${this.baseUrl}/post/publish/video/init/`,
-			{ method: "POST", headers: this.headers, body: JSON.stringify(body) },
+			{
+				method: "POST",
+				headers: this.headers,
+				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
+			},
 			tiktokPostInitSchema,
 		);
 	}
@@ -155,7 +169,12 @@ export class TikTokService {
 		};
 		return fetchJson(
 			`${this.baseUrl}/post/publish/content/init/`,
-			{ method: "POST", headers: this.headers, body: JSON.stringify(body) },
+			{
+				method: "POST",
+				headers: this.headers,
+				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
+			},
 			tiktokPostInitSchema,
 		);
 	}
@@ -165,7 +184,7 @@ export class TikTokService {
 			"open_id,union_id,avatar_url,display_name,bio_description,profile_deep_link,is_verified,follower_count,following_count,likes_count,video_count";
 		return fetchJson(
 			`${this.baseUrl}/user/info/?fields=${fields}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			tiktokUserInfoSchema,
 		);
 	}
@@ -177,6 +196,7 @@ export class TikTokService {
 				method: "POST",
 				headers: this.headers,
 				body: JSON.stringify({ publish_id: publishId }),
+				dispatcher: this.dispatcher,
 			},
 			tiktokStatusSchema,
 		);
