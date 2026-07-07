@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const postSchema = z.object({
 	id: z.string(),
@@ -14,13 +15,17 @@ const postSchema = z.object({
 	slug: z.string().optional(),
 	audience: z.string().optional(),
 	email_sent_to_count: z.number().nullable().optional(),
-	stats: z.object({
-		email: z.object({
-			recipients: z.number().optional(),
-			open_rate: z.number().optional(),
-			click_rate: z.number().optional(),
-		}).optional(),
-	}).optional(),
+	stats: z
+		.object({
+			email: z
+				.object({
+					recipients: z.number().optional(),
+					open_rate: z.number().optional(),
+					click_rate: z.number().optional(),
+				})
+				.optional(),
+		})
+		.optional(),
 });
 
 const postsResponseSchema = z.object({
@@ -52,29 +57,36 @@ const subscribersResponseSchema = z.object({
 export interface BeehiivCredentials {
 	apiKey: string;
 	publicationId?: string;
+	proxyUrl?: string;
 }
 
 export class BeehiivService {
 	private baseUrl = config.beehiiv.baseUrl;
 	private headers: Record<string, string>;
 	private publicationId: string;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: BeehiivCredentials) {
 		const apiKey = credentials?.apiKey ?? config.beehiiv.apiKey;
 		if (!apiKey) {
 			throw new CredentialsError("Beehiiv", ["BEEHIIV_API_KEY"]);
 		}
-		this.publicationId = credentials?.publicationId ?? config.beehiiv.publicationId;
+		this.publicationId =
+			credentials?.publicationId ?? config.beehiiv.publicationId;
 		this.headers = {
 			Authorization: `Bearer ${apiKey}`,
 			"Content-Type": "application/json",
 			Accept: "application/json",
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	private getPublicationId(override?: string): string {
 		const id = override ?? this.publicationId;
-		if (!id) throw new Error("publicationId is required. Set BEEHIIV_PUBLICATION_ID or pass it explicitly.");
+		if (!id)
+			throw new Error(
+				"publicationId is required. Set BEEHIIV_PUBLICATION_ID or pass it explicitly.",
+			);
 		return id;
 	}
 
@@ -82,7 +94,7 @@ export class BeehiivService {
 		const id = this.getPublicationId(publicationId);
 		return fetchJson(
 			`${this.baseUrl}/publications/${id}/posts?page=${page}&limit=${limit}&expand[]=stats`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			postsResponseSchema,
 		);
 	}
@@ -108,7 +120,12 @@ export class BeehiivService {
 
 		return fetchJson(
 			`${this.baseUrl}/publications/${id}/posts`,
-			{ method: "POST", headers: this.headers, body: JSON.stringify(body) },
+			{
+				method: "POST",
+				headers: this.headers,
+				body: JSON.stringify(body),
+				dispatcher: this.dispatcher,
+			},
 			createPostResponseSchema,
 		);
 	}
@@ -117,7 +134,7 @@ export class BeehiivService {
 		const id = this.getPublicationId(publicationId);
 		return fetchJson(
 			`${this.baseUrl}/publications/${id}/subscriptions?page=${page}&limit=${limit}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			subscribersResponseSchema,
 		);
 	}

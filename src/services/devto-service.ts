@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { fetchJson } from "../lib/http.js";
+import { createProxyDispatcher } from "../lib/proxy.js";
 
 const articleSchema = z.object({
 	id: z.number(),
@@ -41,11 +42,13 @@ export type DevToArticle = z.infer<typeof articleSchema>;
 
 export interface DevToCredentials {
 	apiKey: string;
+	proxyUrl?: string;
 }
 
 export class DevToService {
 	private baseUrl = config.devto.baseUrl;
 	private headers: Record<string, string>;
+	private dispatcher?: ReturnType<typeof createProxyDispatcher>;
 
 	constructor(credentials?: DevToCredentials) {
 		const apiKey = credentials?.apiKey ?? config.devto.apiKey;
@@ -57,12 +60,13 @@ export class DevToService {
 			"Content-Type": "application/json",
 			Accept: "application/vnd.forem.api-v1+json",
 		};
+		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
 	async getMyArticles(page = 1, perPage = 30) {
 		return fetchJson(
 			`${this.baseUrl}/articles/me?page=${page}&per_page=${perPage}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			z.array(articleSchema),
 		);
 	}
@@ -70,7 +74,7 @@ export class DevToService {
 	async getArticle(id: number) {
 		return fetchJson(
 			`${this.baseUrl}/articles/${id}`,
-			{ method: "GET", headers: this.headers },
+			{ method: "GET", headers: this.headers, dispatcher: this.dispatcher },
 			articleResponseSchema,
 		);
 	}
@@ -102,6 +106,7 @@ export class DevToService {
 				method: "POST",
 				headers: this.headers,
 				body: JSON.stringify({ article }),
+				dispatcher: this.dispatcher,
 			},
 			articleResponseSchema,
 		);
@@ -124,6 +129,7 @@ export class DevToService {
 				method: "PUT",
 				headers: this.headers,
 				body: JSON.stringify({ article: updates }),
+				dispatcher: this.dispatcher,
 			},
 			articleResponseSchema,
 		);

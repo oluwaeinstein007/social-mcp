@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.10.1
+
+### Patch Changes
+
+- Added `proxyUrl` support to `BeehiivService`, `DevToService`, and `HashnodeService` — proxy coverage is now complete across every service in the package (Ghost and Tumblr already had it).
+
 ## 2.10.0
 
 ### Minor Changes
