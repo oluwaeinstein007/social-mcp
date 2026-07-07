@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.8.0
+
+### Minor Changes
+
+- Added geo-targeting to `LinkedInService.createPost` (`geoUrns`) and `FacebookService.createPost` (`targetCountries`), and automatic 1024-char caption truncation to `WhatsappService.sendMessage` media captions (matching WhatsApp's own limit, same style as Telegram's caption handling) — closing gaps that were otherwise keeping Anthyx's own direct implementations from being able to move onto these services.
+
 ## 2.7.1
 
 ### Patch Changes

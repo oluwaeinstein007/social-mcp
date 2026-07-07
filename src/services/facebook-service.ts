@@ -53,14 +53,31 @@ export class FacebookService {
 		this.dispatcher = createProxyDispatcher(credentials?.proxyUrl);
 	}
 
-	async createPost(pageId: string, message: string, image?: FacebookImage) {
+	async createPost(
+		pageId: string,
+		message: string,
+		image?: FacebookImage,
+		/** ISO 3166-1 alpha-2 country codes to restrict the audience by location. */
+		targetCountries?: string[],
+	) {
 		if (!image) {
 			return fetchJson(
 				`${this.baseUrl}/${pageId}/feed`,
 				{
 					method: "POST",
 					headers: this.headers,
-					body: JSON.stringify({ message }),
+					body: JSON.stringify({
+						message,
+						...(targetCountries?.length
+							? {
+									targeting: {
+										geo_locations: {
+											countries: targetCountries.map((c) => c.toUpperCase()),
+										},
+									},
+								}
+							: {}),
+					}),
 					dispatcher: this.dispatcher,
 				},
 				facebookPostSchema,

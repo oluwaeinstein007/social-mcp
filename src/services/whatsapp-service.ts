@@ -112,6 +112,10 @@ export class WhatsappService {
 							media.filename,
 						),
 					};
+			// WhatsApp truncates/rejects media captions over 1024 chars — trimmed here
+			// rather than letting the send fail outright, matching how Telegram/WhatsApp's
+			// own text message limit (4096) is handled by the API itself.
+			const caption = text.length > 1024 ? `${text.slice(0, 1023)}…` : text;
 			body = {
 				messaging_product: "whatsapp",
 				to,
@@ -119,8 +123,8 @@ export class WhatsappService {
 				[mediaKind]: {
 					...ref,
 					...(mediaKind === "document"
-						? { caption: text, filename: media.filename }
-						: { caption: text }),
+						? { caption, filename: media.filename }
+						: { caption }),
 				},
 			};
 		} else {

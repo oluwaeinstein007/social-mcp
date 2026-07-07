@@ -161,6 +161,8 @@ export class LinkedInService {
 		text: string,
 		visibility = "PUBLIC",
 		image?: LinkedInImage,
+		/** Geo URNs, e.g. ["urn:li:geo:103644278"], to restrict the audience by location. */
+		geoUrns?: string[],
 	) {
 		const shareContent: Record<string, unknown> = {
 			shareCommentary: { text },
@@ -173,7 +175,7 @@ export class LinkedInService {
 			];
 		}
 
-		const body = {
+		const body: Record<string, unknown> = {
 			author: authorUrn,
 			lifecycleState: "PUBLISHED",
 			specificContent: {
@@ -183,6 +185,9 @@ export class LinkedInService {
 				"com.linkedin.ugc.MemberNetworkVisibility": visibility,
 			},
 		};
+		if (geoUrns?.length) {
+			body.targetAudience = { targetedEntities: [{ geoLocations: geoUrns }] };
+		}
 		return fetchJson(
 			`${this.baseUrl}/ugcPosts`,
 			{
