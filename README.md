@@ -328,7 +328,7 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 | `SES_SECRET_ACCESS_KEY`| AWS IAM Secret Access Key                                                                                                                     |
 | `SES_REGION`           | AWS region where your SES sending identity is verified (default: `us-east-1`)                                                                 |
 
-> **Note:** The sender address (`MAIL_FROM_ADDRESS`) must be a verified identity in your SES account. Sending uses the SES v2 REST API with AWS Signature V4 — no AWS SDK required. On startup (and via `EmailService.verify()`), your keys are checked with a signed `GetAccount` call, the same way SMTP is checked with `transporter.verify()`. This only confirms the keys are valid — it does not report sandbox mode or sending quota; check those in the AWS console or via your own `GetAccount` call if you need them.
+> **Note:** The sender address (`MAIL_FROM_ADDRESS`) must be a verified identity in your SES account. Sending uses the SES v2 REST API with AWS Signature V4 — no AWS SDK required. On startup (and via `EmailService.verify()`), your keys are checked with a signed `GetAccount` call, the same way SMTP is checked with `transporter.verify()`. To also check sandbox mode and 24h sending quota (e.g. before kicking off a bulk send), call `EmailService.getSESAccountStatus()` — it reuses that same signed request and returns `{ sandboxMode, max24HourSend, maxSendRate, sentLast24Hours }`.
 
 ## Available Tools
 

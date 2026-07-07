@@ -1,5 +1,11 @@
 # social-mcp
 
+## 2.5.0
+
+### Minor Changes
+
+- Added `EmailService.getSESAccountStatus()` — reuses the signed `GetAccount` call from `verify()` to also report SES sandbox mode and 24h sending quota (`{ sandboxMode, max24HourSend, maxSendRate, sentLast24Hours }`), so callers can check quota before a bulk send instead of discovering it mid-batch.
+
 ## 2.4.1
 
 ### Patch Changes

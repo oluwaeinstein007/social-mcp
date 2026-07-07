@@ -20,6 +20,13 @@ export interface EmailCredentials {
 	sesRegion?: string;
 }
 
+export interface SESAccountStatus {
+	sandboxMode: boolean;
+	max24HourSend: number;
+	maxSendRate: number;
+	sentLast24Hours: number;
+}
+
 export interface EmailAttachment {
 	filename: string;
 	/** Base64-encoded file contents. */
@@ -275,6 +282,34 @@ export class EmailService {
 			},
 			...(method === "GET" ? {} : { body }),
 		});
+	}
+
+	// SES-only: sandbox mode and 24h send quota, straight from the same GetAccount
+	// call verify() makes — lets a caller check quota before a bulk send instead of
+	// discovering it mid-batch as a wall of per-recipient throttling errors.
+	async getSESAccountStatus(): Promise<SESAccountStatus> {
+		if (this.creds.mailer !== "ses") {
+			throw new Error("getSESAccountStatus() is only available for mailer=ses");
+		}
+		const response = await this.sesRequest("GET", "/v2/email/account", "");
+		const body = await response.text();
+		if (!response.ok) {
+			throw new Error(`SES error (${response.status}): ${body}`);
+		}
+		const data = JSON.parse(body) as {
+			ProductionAccessEnabled?: boolean;
+			SendQuota?: {
+				Max24HourSend?: number;
+				MaxSendRate?: number;
+				SentLast24Hours?: number;
+			};
+		};
+		return {
+			sandboxMode: data.ProductionAccessEnabled !== true,
+			max24HourSend: data.SendQuota?.Max24HourSend ?? 0,
+			maxSendRate: data.SendQuota?.MaxSendRate ?? 0,
+			sentLast24Hours: data.SendQuota?.SentLast24Hours ?? 0,
+		};
 	}
 
 	// Verifies credentials. SMTP: opens a connection. SES: signs a GetAccount call

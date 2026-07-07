@@ -61,6 +61,69 @@ describe("EmailService SES verify()", () => {
 	});
 });
 
+describe("EmailService SES getSESAccountStatus()", () => {
+	let fetchMock: ReturnType<typeof vi.fn>;
+
+	beforeEach(() => {
+		fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it("reports sandbox mode and quota from GetAccount", async () => {
+		fetchMock.mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					ProductionAccessEnabled: false,
+					SendQuota: {
+						Max24HourSend: 200,
+						MaxSendRate: 1,
+						SentLast24Hours: 42,
+					},
+				}),
+				{ status: 200 },
+			),
+		);
+		const service = new EmailService(sesCreds);
+
+		await expect(service.getSESAccountStatus()).resolves.toEqual({
+			sandboxMode: true,
+			max24HourSend: 200,
+			maxSendRate: 1,
+			sentLast24Hours: 42,
+		});
+	});
+
+	it("reports production access when enabled", async () => {
+		fetchMock.mockResolvedValue(
+			new Response(
+				JSON.stringify({ ProductionAccessEnabled: true, SendQuota: {} }),
+				{ status: 200 },
+			),
+		);
+		const service = new EmailService(sesCreds);
+
+		const status = await service.getSESAccountStatus();
+		expect(status.sandboxMode).toBe(false);
+	});
+
+	it("rejects for non-SES mailers", async () => {
+		const service = new EmailService({
+			mailer: "smtp",
+			fromAddress: "sender@example.com",
+			smtpHost: "smtp.example.com",
+			smtpUsername: "user",
+			smtpPassword: "pass",
+		});
+		await expect(service.getSESAccountStatus()).rejects.toThrow(
+			/only available for mailer=ses/,
+		);
+	});
+});
+
 describe("EmailService SES send()", () => {
 	let fetchMock: ReturnType<typeof vi.fn>;
 
