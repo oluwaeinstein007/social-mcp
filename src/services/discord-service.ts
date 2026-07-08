@@ -29,6 +29,20 @@ export interface DiscordFileAttachment {
 	contentType?: string;
 }
 
+/** Discord's rich embed object — https://discord.com/developers/docs/resources/channel#embed-object */
+export interface DiscordEmbed {
+	title?: string;
+	description?: string;
+	url?: string;
+	/** Decimal color value, e.g. 0xff5733. */
+	color?: number;
+	fields?: Array<{ name: string; value: string; inline?: boolean }>;
+	image?: { url: string };
+	thumbnail?: { url: string };
+	footer?: { text: string; icon_url?: string };
+	author?: { name: string; url?: string; icon_url?: string };
+}
+
 export interface DiscordCredentials {
 	botToken: string;
 	/** Routes API calls through this proxy (e.g. per-tenant IP isolation). */
@@ -56,6 +70,7 @@ export class DiscordService {
 		channelId: string,
 		content: string,
 		attachments?: DiscordFileAttachment[],
+		embeds?: DiscordEmbed[],
 	) {
 		if (!attachments?.length) {
 			return fetchJson(
@@ -63,7 +78,7 @@ export class DiscordService {
 				{
 					method: "POST",
 					headers: this.headers,
-					body: JSON.stringify({ content }),
+					body: JSON.stringify({ content, ...(embeds?.length ? { embeds } : {}) }),
 					dispatcher: this.dispatcher,
 				},
 				discordMessageSchema,
@@ -77,6 +92,7 @@ export class DiscordService {
 			"payload_json",
 			JSON.stringify({
 				content,
+				...(embeds?.length ? { embeds } : {}),
 				attachments: attachments.map((attachment, index) => ({
 					id: index,
 					filename: attachment.filename,

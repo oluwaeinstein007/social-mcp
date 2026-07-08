@@ -33,6 +33,20 @@ export interface MessageInfo {
 	date: number;
 }
 
+export interface PollInfo {
+	messageId: number;
+	chatId: number;
+	pollId: string;
+	date: number;
+}
+
+export interface SendOptions {
+	/** Telegram text formatting mode. Omit for plain text. */
+	parseMode?: "Markdown" | "MarkdownV2" | "HTML";
+	/** Send without a notification sound (still delivered, just silent). */
+	silent?: boolean;
+}
+
 export class TelegramService {
 	private bot: Telegraf;
 
@@ -55,6 +69,7 @@ export class TelegramService {
 		photo: string,
 		filename?: string,
 		caption?: string,
+		options?: SendOptions,
 	): Promise<MessageInfo> {
 		try {
 			const source = isHttpUrl(photo)
@@ -63,10 +78,14 @@ export class TelegramService {
 			const fitsCaption = !caption || caption.length <= MAX_CAPTION_LENGTH;
 			const message = await this.bot.telegram.sendPhoto(chatId, source, {
 				caption: fitsCaption ? caption : undefined,
+				parse_mode: options?.parseMode,
+				disable_notification: options?.silent,
 			});
 			if (caption && !fitsCaption) {
 				await this.bot.telegram.sendMessage(chatId, caption, {
 					reply_parameters: { message_id: message.message_id },
+					parse_mode: options?.parseMode,
+					disable_notification: options?.silent,
 				});
 			}
 			return {
@@ -115,9 +134,13 @@ export class TelegramService {
 	async sendMessage(
 		chatId: string | number,
 		text: string,
+		options?: SendOptions,
 	): Promise<MessageInfo> {
 		try {
-			const message = await this.bot.telegram.sendMessage(chatId, text);
+			const message = await this.bot.telegram.sendMessage(chatId, text, {
+				parse_mode: options?.parseMode,
+				disable_notification: options?.silent,
+			});
 			return {
 				messageId: message.message_id,
 				chatId: message.chat.id,
@@ -127,6 +150,35 @@ export class TelegramService {
 		} catch (error) {
 			throw new Error(
 				`Failed to send message: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	async sendPoll(
+		chatId: string | number,
+		question: string,
+		options: string[],
+		pollOptions?: {
+			isAnonymous?: boolean;
+			allowsMultipleAnswers?: boolean;
+			silent?: boolean;
+		},
+	): Promise<PollInfo> {
+		try {
+			const message = await this.bot.telegram.sendPoll(chatId, question, options, {
+				is_anonymous: pollOptions?.isAnonymous,
+				allows_multiple_answers: pollOptions?.allowsMultipleAnswers,
+				disable_notification: pollOptions?.silent,
+			});
+			return {
+				messageId: message.message_id,
+				chatId: message.chat.id,
+				pollId: message.poll.id,
+				date: message.date,
+			};
+		} catch (error) {
+			throw new Error(
+				`Failed to send poll: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
 		}
 	}

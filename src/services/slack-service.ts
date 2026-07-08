@@ -31,6 +31,12 @@ export class SlackService {
 		channelId: string,
 		text: string,
 		attachments?: SlackFileAttachment[],
+		options?: {
+			/** Block Kit layout blocks — see https://api.slack.com/block-kit. `text` is still sent as the fallback/notification text. Validated server-side by Slack. */
+			blocks?: Record<string, unknown>[];
+			/** Reply in-thread under this parent message's ts, instead of posting a new top-level message. */
+			threadTs?: string;
+		},
 	) {
 		if (attachments && attachments.length > 0) {
 			const [first, ...rest] = attachments as [
@@ -42,13 +48,15 @@ export class SlackService {
 				file: Buffer.from(first.content, "base64"),
 				filename: first.filename,
 				initial_comment: text,
-			});
+				thread_ts: options?.threadTs,
+			} as never);
 			for (const attachment of rest) {
 				await this.web.filesUploadV2({
 					channel_id: channelId,
 					file: Buffer.from(attachment.content, "base64"),
 					filename: attachment.filename,
-				});
+					thread_ts: options?.threadTs,
+				} as never);
 			}
 			return { messageId: undefined, channelId, text, files: uploaded.files };
 		}
@@ -56,6 +64,8 @@ export class SlackService {
 		const result = await this.web.chat.postMessage({
 			channel: channelId,
 			text,
+			blocks: options?.blocks as never,
+			thread_ts: options?.threadTs,
 		});
 		if (!result.ok) {
 			throw new Error(`Slack API error: ${result.error ?? "unknown error"}`);

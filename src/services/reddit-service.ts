@@ -231,10 +231,20 @@ export class RedditService {
 	async submitPost(
 		subreddit: string,
 		title: string,
-		kind: "self" | "link" | "image",
+		kind: "self" | "link" | "image" | "crosspost",
 		text?: string,
 		url?: string,
 		media?: RedditMedia,
+		options?: {
+			/** Flair template ID — takes priority over flairText if both are set. */
+			flairId?: string;
+			/** Free-text flair — only works on subreddits that allow user-supplied flair text. */
+			flairText?: string;
+			nsfw?: boolean;
+			spoiler?: boolean;
+			/** Fullname (t3_xxxxx) of the post being crossposted — required when kind is "crosspost". */
+			crosspostFullname?: string;
+		},
 	) {
 		const headers = await this.headers();
 		const mediaUrl =
@@ -243,6 +253,12 @@ export class RedditService {
 		if (kind === "self" && text) body.set("text", text);
 		if ((kind === "link" || kind === "image") && mediaUrl)
 			body.set("url", mediaUrl);
+		if (kind === "crosspost" && options?.crosspostFullname)
+			body.set("crosspost_fullname", options.crosspostFullname);
+		if (options?.flairId) body.set("flair_id", options.flairId);
+		else if (options?.flairText) body.set("flair_text", options.flairText);
+		if (options?.nsfw) body.set("nsfw", "true");
+		if (options?.spoiler) body.set("spoiler", "true");
 		const response = await fetch(`${this.baseUrl}/api/submit`, {
 			method: "POST",
 			headers,
@@ -255,6 +271,37 @@ export class RedditService {
 			);
 		}
 		return redditPostSchema.parse(await response.json());
+	}
+
+	// Looks up a subreddit's available post-flair templates so a caller can resolve a
+	// free-text flair name (e.g. from a UI dropdown) to the flair_id submitPost needs.
+	async getPostFlairs(subreddit: string): Promise<
+		Array<{ id: string; text: string; textEditable: boolean }>
+	> {
+		const headers = await this.headers();
+		const response = await fetch(
+			`${this.baseUrl}/r/${subreddit}/api/link_flair_v2`,
+			{ method: "GET", headers, dispatcher: this.dispatcher } as RequestInit,
+		);
+		if (!response.ok) {
+			throw new Error(
+				`Reddit API error ${response.status}: ${await response.text()}`,
+			);
+		}
+		const flairs = z
+			.array(
+				z.object({
+					id: z.string(),
+					text: z.string(),
+					text_editable: z.boolean().optional(),
+				}),
+			)
+			.parse(await response.json());
+		return flairs.map((f) => ({
+			id: f.id,
+			text: f.text,
+			textEditable: f.text_editable ?? false,
+		}));
 	}
 
 	async getPosts(

@@ -1,5 +1,16 @@
 # social-mcp
 
+## 2.12.0
+
+### Minor Changes
+
+- Add previously-missing publish options across four services, all backward-compatible (new optional parameters, no breaking changes):
+
+  - **Discord**: `sendMessage` accepts an `embeds` array (rich embed cards — title, description, color, fields, image, footer, author).
+  - **Telegram**: new `sendPoll` method; `sendMessage`/`sendPhoto` accept `parseMode` (Markdown/MarkdownV2/HTML) and `silent` (send without notification sound).
+  - **Reddit**: `submitPost` accepts `flairId`/`flairText`, `nsfw`, `spoiler`, and a new `"crosspost"` kind with `crosspostFullname`; new `getPostFlairs` method to look up a subreddit's flair templates.
+  - **Slack**: `sendMessage` accepts `blocks` (Block Kit layout) and `threadTs` (reply within a thread instead of posting top-level).
+
 ## 2.11.0
 
 ### Minor Changes
