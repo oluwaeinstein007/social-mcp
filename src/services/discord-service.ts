@@ -22,6 +22,11 @@ const discordMessageSchema = z.object({
 
 const discordMessagesSchema = z.array(discordMessageSchema);
 
+const discordThreadSchema = z.object({
+	id: z.string(),
+	name: z.string().optional(),
+});
+
 export interface DiscordFileAttachment {
 	filename: string;
 	/** Base64-encoded file contents. */
@@ -125,6 +130,89 @@ export class DiscordService {
 			);
 		}
 		return discordMessageSchema.parse(await response.json());
+	}
+
+	// Forum/media channels don't take plain messages — a "post" there is a thread
+	// created atomically with its starter message via this dedicated endpoint.
+	async createForumPost(
+		channelId: string,
+		threadName: string,
+		content: string,
+		attachments?: DiscordFileAttachment[],
+		embeds?: DiscordEmbed[],
+	) {
+		if (!attachments?.length) {
+			return fetchJson(
+				`${this.baseUrl}/channels/${channelId}/threads`,
+				{
+					method: "POST",
+					headers: this.headers,
+					body: JSON.stringify({
+						name: threadName,
+						message: { content, ...(embeds?.length ? { embeds } : {}) },
+					}),
+					dispatcher: this.dispatcher,
+				},
+				discordThreadSchema,
+			);
+		}
+
+		const formData = new FormData();
+		formData.append(
+			"payload_json",
+			JSON.stringify({
+				name: threadName,
+				message: {
+					content,
+					...(embeds?.length ? { embeds } : {}),
+					attachments: attachments.map((attachment, index) => ({
+						id: index,
+						filename: attachment.filename,
+					})),
+				},
+			}),
+		);
+		attachments.forEach((attachment, index) => {
+			const buffer = Buffer.from(attachment.content, "base64");
+			formData.append(
+				`files[${index}]`,
+				new Blob([buffer], {
+					type: attachment.contentType || "application/octet-stream",
+				}),
+				attachment.filename,
+			);
+		});
+
+		const response = await fetch(
+			`${this.baseUrl}/channels/${channelId}/threads`,
+			{
+				method: "POST",
+				headers: { Authorization: this.headers.Authorization ?? "" },
+				body: formData,
+				dispatcher: this.dispatcher,
+			} as RequestInit,
+		);
+		if (!response.ok) {
+			throw new Error(
+				`Discord API error (${response.status}): ${await response.text()}`,
+			);
+		}
+		return discordThreadSchema.parse(await response.json());
+	}
+
+	// Spins up a thread rooted at an existing message in a normal text channel —
+	// separate from createForumPost, which creates the message and thread together.
+	async createThreadFromMessage(channelId: string, messageId: string, name: string) {
+		return fetchJson(
+			`${this.baseUrl}/channels/${channelId}/messages/${messageId}/threads`,
+			{
+				method: "POST",
+				headers: this.headers,
+				body: JSON.stringify({ name }),
+				dispatcher: this.dispatcher,
+			},
+			discordThreadSchema,
+		);
 	}
 
 	async getMessages(channelId: string, limit = 50) {

@@ -1,5 +1,14 @@
 # social-mcp
 
+## 2.13.0
+
+### Minor Changes
+
+- Add Discord forum-post and message-thread creation
+
+  - `DiscordService.createForumPost(channelId, threadName, content, attachments?, embeds?)` — creates a post in a forum/media channel (Discord requires a dedicated `POST /channels/{id}/threads` call there, distinct from a normal message send)
+  - `DiscordService.createThreadFromMessage(channelId, messageId, name)` — spins up a reply thread rooted at an existing message
+
 ## 2.12.0
 
 ### Minor Changes
