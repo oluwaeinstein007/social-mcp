@@ -16,7 +16,12 @@ describe("DiscordService sendMessage attachments", () => {
 	it("sends a plain JSON body when there are no attachments", async () => {
 		fetchMock.mockResolvedValue(
 			new Response(
-				JSON.stringify({ id: "1", channel_id: "c1", content: "hi", timestamp: "now" }),
+				JSON.stringify({
+					id: "1",
+					channel_id: "c1",
+					content: "hi",
+					timestamp: "now",
+				}),
 				{ status: 200 },
 			),
 		);
@@ -36,14 +41,24 @@ describe("DiscordService sendMessage attachments", () => {
 					channel_id: "c1",
 					content: "hi",
 					timestamp: "now",
-					attachments: [{ id: "9", filename: "note.txt", url: "https://cdn.example/note.txt" }],
+					attachments: [
+						{
+							id: "9",
+							filename: "note.txt",
+							url: "https://cdn.example/note.txt",
+						},
+					],
 				}),
 				{ status: 200 },
 			),
 		);
 		const service = new DiscordService({ botToken: "token" });
 		const result = await service.sendMessage("c1", "hi", [
-			{ filename: "note.txt", content: Buffer.from("hello").toString("base64"), contentType: "text/plain" },
+			{
+				filename: "note.txt",
+				content: Buffer.from("hello").toString("base64"),
+				contentType: "text/plain",
+			},
 		]);
 
 		const [, init] = fetchMock.mock.calls[0];

@@ -6,21 +6,35 @@ const params = z.object({
 	id: z.string().describe("Post ID (from GHOST_GET_POSTS)"),
 	updatedAt: z
 		.string()
-		.describe("Current updated_at timestamp of the post (required by Ghost for optimistic locking)"),
+		.describe(
+			"Current updated_at timestamp of the post (required by Ghost for optimistic locking)",
+		),
 	title: z.string().optional().describe("New title"),
 	html: z.string().optional().describe("New body HTML"),
 	status: z.enum(["draft", "published"]).optional().describe("New status"),
-	tags: z.array(z.string()).optional().describe("New tag names (replaces existing tags)"),
+	tags: z
+		.array(z.string())
+		.optional()
+		.describe("New tag names (replaces existing tags)"),
 	excerpt: z.string().optional().describe("New custom excerpt"),
-	siteUrl: z.string().optional().describe("Ghost site URL (overrides GHOST_SITE_URL env var)"),
-	adminApiKey: z.string().optional().describe("Ghost Admin API key id:secret (overrides GHOST_ADMIN_API_KEY env var)"),
+	siteUrl: z
+		.string()
+		.optional()
+		.describe("Ghost site URL (overrides GHOST_SITE_URL env var)"),
+	adminApiKey: z
+		.string()
+		.optional()
+		.describe(
+			"Ghost Admin API key id:secret (overrides GHOST_ADMIN_API_KEY env var)",
+		),
 });
 
 type Params = z.infer<typeof params>;
 
 export const updatePostTool = {
 	name: "GHOST_UPDATE_POST",
-	description: "Update an existing Ghost post. Requires the post's current updated_at timestamp for optimistic locking.",
+	description:
+		"Update an existing Ghost post. Requires the post's current updated_at timestamp for optimistic locking.",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {

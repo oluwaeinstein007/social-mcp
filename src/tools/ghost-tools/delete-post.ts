@@ -4,15 +4,24 @@ import { GhostService, getGhostService } from "../../services/ghost-service.js";
 
 const params = z.object({
 	id: z.string().describe("Post ID to delete (from GHOST_GET_POSTS)"),
-	siteUrl: z.string().optional().describe("Ghost site URL (overrides GHOST_SITE_URL env var)"),
-	adminApiKey: z.string().optional().describe("Ghost Admin API key id:secret (overrides GHOST_ADMIN_API_KEY env var)"),
+	siteUrl: z
+		.string()
+		.optional()
+		.describe("Ghost site URL (overrides GHOST_SITE_URL env var)"),
+	adminApiKey: z
+		.string()
+		.optional()
+		.describe(
+			"Ghost Admin API key id:secret (overrides GHOST_ADMIN_API_KEY env var)",
+		),
 });
 
 type Params = z.infer<typeof params>;
 
 export const deletePostTool = {
 	name: "GHOST_DELETE_POST",
-	description: "Permanently delete a Ghost post by ID. This action cannot be undone.",
+	description:
+		"Permanently delete a Ghost post by ID. This action cannot be undone.",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {

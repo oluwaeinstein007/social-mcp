@@ -73,10 +73,14 @@ export class TwitchService {
 
 	constructor(credentials?: TwitchCredentials) {
 		const clientId = credentials?.clientId ?? config.twitch.clientId;
-		const clientSecret = credentials?.clientSecret ?? config.twitch.clientSecret;
+		const clientSecret =
+			credentials?.clientSecret ?? config.twitch.clientSecret;
 
 		if (!clientId || !clientSecret) {
-			throw new CredentialsError("Twitch", ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"]);
+			throw new CredentialsError("Twitch", [
+				"TWITCH_CLIENT_ID",
+				"TWITCH_CLIENT_SECRET",
+			]);
 		}
 
 		this.clientId = clientId;
@@ -91,7 +95,9 @@ export class TwitchService {
 			{ method: "POST" },
 		);
 		if (!response.ok) {
-			throw new Error(`Twitch auth failed: ${response.status} ${await response.text()}`);
+			throw new Error(
+				`Twitch auth failed: ${response.status} ${await response.text()}`,
+			);
 		}
 		const data = tokenSchema.parse(await response.json());
 		this._appToken = data.access_token;
@@ -99,7 +105,10 @@ export class TwitchService {
 	}
 
 	private async headers(useUserToken = false): Promise<Record<string, string>> {
-		const token = useUserToken && this._accessToken ? this._accessToken : await this.getAppToken();
+		const token =
+			useUserToken && this._accessToken
+				? this._accessToken
+				: await this.getAppToken();
 		return {
 			Authorization: `Bearer ${token}`,
 			"Client-Id": this.clientId,
@@ -112,19 +121,29 @@ export class TwitchService {
 		const url = login
 			? `${this.baseUrl}/users?login=${login}`
 			: `${this.baseUrl}/users`;
-		return fetchJson(url, { method: "GET", headers: hdrs }, z.object({ data: z.array(userSchema) }));
+		return fetchJson(
+			url,
+			{ method: "GET", headers: hdrs },
+			z.object({ data: z.array(userSchema) }),
+		);
 	}
 
-	async getStreams(opts: { userLogins?: string[]; gameId?: string; first?: number } = {}) {
+	async getStreams(
+		opts: { userLogins?: string[]; gameId?: string; first?: number } = {},
+	) {
 		const hdrs = await this.headers();
 		const params = new URLSearchParams();
-		for (const login of opts.userLogins ?? []) params.append("user_login", login);
+		for (const login of opts.userLogins ?? [])
+			params.append("user_login", login);
 		if (opts.gameId) params.set("game_id", opts.gameId);
 		params.set("first", String(opts.first ?? 10));
 		return fetchJson(
 			`${this.baseUrl}/streams?${params}`,
 			{ method: "GET", headers: hdrs },
-			z.object({ data: z.array(streamSchema), pagination: z.object({ cursor: z.string().optional() }).optional() }),
+			z.object({
+				data: z.array(streamSchema),
+				pagination: z.object({ cursor: z.string().optional() }).optional(),
+			}),
 		);
 	}
 
@@ -139,25 +158,44 @@ export class TwitchService {
 
 	async searchChannels(query: string, liveOnly = false, first = 10) {
 		const hdrs = await this.headers();
-		const params = new URLSearchParams({ query, live_only: String(liveOnly), first: String(first) });
+		const params = new URLSearchParams({
+			query,
+			live_only: String(liveOnly),
+			first: String(first),
+		});
 		return fetchJson(
 			`${this.baseUrl}/search/channels?${params}`,
 			{ method: "GET", headers: hdrs },
-			z.object({ data: z.array(searchChannelSchema), pagination: z.object({ cursor: z.string().optional() }).optional() }),
+			z.object({
+				data: z.array(searchChannelSchema),
+				pagination: z.object({ cursor: z.string().optional() }).optional(),
+			}),
 		);
 	}
 
-	async sendChatMessage(broadcasterId: string, senderId: string, message: string) {
+	async sendChatMessage(
+		broadcasterId: string,
+		senderId: string,
+		message: string,
+	) {
 		const hdrs = await this.headers(true);
 		const response = await fetch(`${this.baseUrl}/chat/messages`, {
 			method: "POST",
 			headers: hdrs,
-			body: JSON.stringify({ broadcaster_id: broadcasterId, sender_id: senderId, message }),
+			body: JSON.stringify({
+				broadcaster_id: broadcasterId,
+				sender_id: senderId,
+				message,
+			}),
 		});
 		if (!response.ok) {
-			throw new Error(`Twitch API error ${response.status}: ${await response.text()}`);
+			throw new Error(
+				`Twitch API error ${response.status}: ${await response.text()}`,
+			);
 		}
-		return response.json() as Promise<{ data: Array<{ message_id: string; is_sent: boolean }> }>;
+		return response.json() as Promise<{
+			data: Array<{ message_id: string; is_sent: boolean }>;
+		}>;
 	}
 }
 

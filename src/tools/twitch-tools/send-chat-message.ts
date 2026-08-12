@@ -1,14 +1,38 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { TwitchService, getTwitchService } from "../../services/twitch-service.js";
+import {
+	getTwitchService,
+	TwitchService,
+} from "../../services/twitch-service.js";
 
 const params = z.object({
-	broadcasterId: z.string().describe("Channel ID to send the message to (get via TWITCH_GET_USER)"),
-	senderId: z.string().describe("User ID of the bot/user sending the message (must match the access token owner)"),
-	message: z.string().min(1).max(500).describe("Chat message content (max 500 characters)"),
-	clientId: z.string().optional().describe("Twitch client ID (overrides TWITCH_CLIENT_ID env var)"),
-	clientSecret: z.string().optional().describe("Twitch client secret (overrides TWITCH_CLIENT_SECRET env var)"),
-	accessToken: z.string().optional().describe("User OAuth token with chat:edit scope (overrides TWITCH_ACCESS_TOKEN env var)"),
+	broadcasterId: z
+		.string()
+		.describe("Channel ID to send the message to (get via TWITCH_GET_USER)"),
+	senderId: z
+		.string()
+		.describe(
+			"User ID of the bot/user sending the message (must match the access token owner)",
+		),
+	message: z
+		.string()
+		.min(1)
+		.max(500)
+		.describe("Chat message content (max 500 characters)"),
+	clientId: z
+		.string()
+		.optional()
+		.describe("Twitch client ID (overrides TWITCH_CLIENT_ID env var)"),
+	clientSecret: z
+		.string()
+		.optional()
+		.describe("Twitch client secret (overrides TWITCH_CLIENT_SECRET env var)"),
+	accessToken: z
+		.string()
+		.optional()
+		.describe(
+			"User OAuth token with chat:edit scope (overrides TWITCH_ACCESS_TOKEN env var)",
+		),
 });
 
 type Params = z.infer<typeof params>;
@@ -22,10 +46,18 @@ export const sendChatMessageTool = {
 		try {
 			const service =
 				p.clientId && p.clientSecret
-					? new TwitchService({ clientId: p.clientId, clientSecret: p.clientSecret, accessToken: p.accessToken })
+					? new TwitchService({
+							clientId: p.clientId,
+							clientSecret: p.clientSecret,
+							accessToken: p.accessToken,
+						})
 					: getTwitchService();
 
-			const result = await service.sendChatMessage(p.broadcasterId, p.senderId, p.message);
+			const result = await service.sendChatMessage(
+				p.broadcasterId,
+				p.senderId,
+				p.message,
+			);
 			const sent = result.data[0];
 
 			if (!sent?.is_sent) {

@@ -275,9 +275,9 @@ export class RedditService {
 
 	// Looks up a subreddit's available post-flair templates so a caller can resolve a
 	// free-text flair name (e.g. from a UI dropdown) to the flair_id submitPost needs.
-	async getPostFlairs(subreddit: string): Promise<
-		Array<{ id: string; text: string; textEditable: boolean }>
-	> {
+	async getPostFlairs(
+		subreddit: string,
+	): Promise<Array<{ id: string; text: string; textEditable: boolean }>> {
 		const headers = await this.headers();
 		const response = await fetch(
 			`${this.baseUrl}/r/${subreddit}/api/link_flair_v2`,

@@ -15,22 +15,39 @@ const params = z.object({
 		.optional()
 		.default(false)
 		.describe("Whether to publish immediately (default: false = draft)"),
-	description: z.string().max(160).optional().describe("Short description/subtitle shown in listings"),
-	canonicalUrl: z.string().url().optional().describe("Canonical URL if cross-posting from another site"),
-	series: z.string().optional().describe("Series name to group related articles"),
+	description: z
+		.string()
+		.max(160)
+		.optional()
+		.describe("Short description/subtitle shown in listings"),
+	canonicalUrl: z
+		.string()
+		.url()
+		.optional()
+		.describe("Canonical URL if cross-posting from another site"),
+	series: z
+		.string()
+		.optional()
+		.describe("Series name to group related articles"),
 	mainImage: z.string().url().optional().describe("Cover image URL"),
-	apiKey: z.string().optional().describe("Dev.to API key (overrides DEVTO_API_KEY env var)"),
+	apiKey: z
+		.string()
+		.optional()
+		.describe("Dev.to API key (overrides DEVTO_API_KEY env var)"),
 });
 
 type Params = z.infer<typeof params>;
 
 export const createArticleTool = {
 	name: "DEVTO_CREATE_ARTICLE",
-	description: "Create or draft an article on Dev.to. Set published=true to publish immediately, or false (default) to save as draft.",
+	description:
+		"Create or draft an article on Dev.to. Set published=true to publish immediately, or false (default) to save as draft.",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {
-			const service = p.apiKey ? new DevToService({ apiKey: p.apiKey }) : getDevToService();
+			const service = p.apiKey
+				? new DevToService({ apiKey: p.apiKey })
+				: getDevToService();
 			const article = await service.createArticle(
 				p.title,
 				p.bodyMarkdown,

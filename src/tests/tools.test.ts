@@ -236,7 +236,10 @@ const mediumCreatePostParams = z.object({
 	title: z.string().min(1).max(255),
 	content: z.string().min(1),
 	tags: z.array(z.string()).max(5).optional(),
-	publishStatus: z.enum(["public", "draft", "unlisted"]).optional().default("public"),
+	publishStatus: z
+		.enum(["public", "draft", "unlisted"])
+		.optional()
+		.default("public"),
 	canonicalUrl: z.string().url().optional(),
 	accessToken: z.string().optional(),
 });

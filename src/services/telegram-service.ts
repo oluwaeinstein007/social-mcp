@@ -165,11 +165,16 @@ export class TelegramService {
 		},
 	): Promise<PollInfo> {
 		try {
-			const message = await this.bot.telegram.sendPoll(chatId, question, options, {
-				is_anonymous: pollOptions?.isAnonymous,
-				allows_multiple_answers: pollOptions?.allowsMultipleAnswers,
-				disable_notification: pollOptions?.silent,
-			});
+			const message = await this.bot.telegram.sendPoll(
+				chatId,
+				question,
+				options,
+				{
+					is_anonymous: pollOptions?.isAnonymous,
+					allows_multiple_answers: pollOptions?.allowsMultipleAnswers,
+					disable_notification: pollOptions?.silent,
+				},
+			);
 			return {
 				messageId: message.message_id,
 				chatId: message.chat.id,
