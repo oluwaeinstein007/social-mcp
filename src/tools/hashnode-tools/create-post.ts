@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { HashnodeService, getHashnodeService } from "../../services/hashnode-service.js";
+import {
+	getHashnodeService,
+	HashnodeService,
+} from "../../services/hashnode-service.js";
 
 const params = z.object({
 	title: z.string().min(1).describe("Post title"),
@@ -8,12 +11,31 @@ const params = z.object({
 	tags: z
 		.array(z.object({ name: z.string(), slug: z.string() }))
 		.optional()
-		.describe("Tags as [{name, slug}] — slug is the lowercase hyphenated version of the tag name"),
-	publicationId: z.string().optional().describe("Hashnode publication ID (overrides HASHNODE_PUBLICATION_ID env var)"),
-	subtitle: z.string().optional().describe("Subtitle displayed below the title"),
+		.describe(
+			"Tags as [{name, slug}] — slug is the lowercase hyphenated version of the tag name",
+		),
+	publicationId: z
+		.string()
+		.optional()
+		.describe(
+			"Hashnode publication ID (overrides HASHNODE_PUBLICATION_ID env var)",
+		),
+	subtitle: z
+		.string()
+		.optional()
+		.describe("Subtitle displayed below the title"),
 	coverImageUrl: z.string().url().optional().describe("Cover image URL"),
-	disableComments: z.boolean().optional().default(false).describe("Disable comments on the post"),
-	accessToken: z.string().optional().describe("Hashnode Personal Access Token (overrides HASHNODE_ACCESS_TOKEN env var)"),
+	disableComments: z
+		.boolean()
+		.optional()
+		.default(false)
+		.describe("Disable comments on the post"),
+	accessToken: z
+		.string()
+		.optional()
+		.describe(
+			"Hashnode Personal Access Token (overrides HASHNODE_ACCESS_TOKEN env var)",
+		),
 });
 
 type Params = z.infer<typeof params>;
@@ -25,7 +47,10 @@ export const createPostTool = {
 	execute: async (p: Params) => {
 		try {
 			const service = p.accessToken
-				? new HashnodeService({ accessToken: p.accessToken, publicationId: p.publicationId })
+				? new HashnodeService({
+						accessToken: p.accessToken,
+						publicationId: p.publicationId,
+					})
 				: getHashnodeService();
 
 			const result = await service.createPost(

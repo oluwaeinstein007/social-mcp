@@ -24,14 +24,31 @@ const sendMessageParams = z.object({
 				title: z.string().optional(),
 				description: z.string().optional(),
 				url: z.string().optional(),
-				color: z.number().optional().describe("Decimal color value, e.g. 16729413."),
+				color: z
+					.number()
+					.optional()
+					.describe("Decimal color value, e.g. 16729413."),
 				fields: z
-					.array(z.object({ name: z.string(), value: z.string(), inline: z.boolean().optional() }))
+					.array(
+						z.object({
+							name: z.string(),
+							value: z.string(),
+							inline: z.boolean().optional(),
+						}),
+					)
 					.optional(),
 				image: z.object({ url: z.string() }).optional(),
 				thumbnail: z.object({ url: z.string() }).optional(),
-				footer: z.object({ text: z.string(), icon_url: z.string().optional() }).optional(),
-				author: z.object({ name: z.string(), url: z.string().optional(), icon_url: z.string().optional() }).optional(),
+				footer: z
+					.object({ text: z.string(), icon_url: z.string().optional() })
+					.optional(),
+				author: z
+					.object({
+						name: z.string(),
+						url: z.string().optional(),
+						icon_url: z.string().optional(),
+					})
+					.optional(),
 			}),
 		)
 		.optional()

@@ -77,7 +77,7 @@ export class MediumService {
 			tags: tags.slice(0, 5),
 			publishStatus,
 		};
-		if (canonicalUrl) body["canonicalUrl"] = canonicalUrl;
+		if (canonicalUrl) body.canonicalUrl = canonicalUrl;
 
 		return fetchJson(
 			`${this.baseUrl}/users/${authorId}/posts`,

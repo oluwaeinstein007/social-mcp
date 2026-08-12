@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { getMediumService, MediumService } from "../../services/medium-service.js";
+import {
+	getMediumService,
+	MediumService,
+} from "../../services/medium-service.js";
 
 const createPostParams = z.object({
 	authorId: z
@@ -10,10 +13,7 @@ const createPostParams = z.object({
 			"Your Medium user ID — retrieve it with MEDIUM_GET_USER if you don't know it",
 		),
 	title: z.string().min(1).max(255).describe("Article title"),
-	content: z
-		.string()
-		.min(1)
-		.describe("Article body in Markdown format"),
+	content: z.string().min(1).describe("Article body in Markdown format"),
 	tags: z
 		.array(z.string())
 		.max(5)
@@ -32,7 +32,9 @@ const createPostParams = z.object({
 	accessToken: z
 		.string()
 		.optional()
-		.describe("Medium integration token (overrides MEDIUM_ACCESS_TOKEN env var)"),
+		.describe(
+			"Medium integration token (overrides MEDIUM_ACCESS_TOKEN env var)",
+		),
 });
 
 type CreatePostParams = z.infer<typeof createPostParams>;

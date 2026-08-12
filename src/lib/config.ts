@@ -99,7 +99,10 @@ export const config = {
 			port: parseInt(process.env.MAIL_PORT || "587", 10),
 			username: process.env.MAIL_USERNAME || "",
 			password: process.env.MAIL_PASSWORD || "",
-			encryption: (process.env.MAIL_ENCRYPTION || "tls") as "tls" | "ssl" | "none",
+			encryption: (process.env.MAIL_ENCRYPTION || "tls") as
+				| "tls"
+				| "ssl"
+				| "none",
 		},
 		sendgrid: {
 			apiKey: process.env.SENDGRID_API_KEY || "",

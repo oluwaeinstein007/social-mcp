@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CredentialsError } from "../lib/errors.js";
 
 // Save and restore env around each test
@@ -8,6 +8,11 @@ const TWITTER_KEYS = [
 	"TWITTER_APP_SECRET",
 	"TWITTER_ACCESS_TOKEN",
 	"TWITTER_ACCESS_SECRET",
+	"TWITTER_BEARER_TOKEN",
+	"TWITTER_BACKEND",
+	"XQUIK_API_KEY",
+	"XQUIK_BASE_URL",
+	"XQUIK_TIMEOUT_MS",
 ];
 
 function saveEnv(keys: string[]) {
@@ -27,8 +32,13 @@ function restoreEnv(keys: string[]) {
 }
 
 describe("TwitterService credential validation", () => {
-	beforeEach(() => saveEnv(TWITTER_KEYS));
-	afterEach(() => restoreEnv(TWITTER_KEYS));
+	beforeEach(() => {
+		saveEnv(TWITTER_KEYS);
+	});
+	afterEach(() => {
+		restoreEnv(TWITTER_KEYS);
+		vi.unstubAllGlobals();
+	});
 
 	it("throws CredentialsError when all keys are missing", async () => {
 		clearEnv(TWITTER_KEYS);
@@ -47,6 +57,194 @@ describe("TwitterService credential validation", () => {
 			if (e instanceof CredentialsError) msg = e.message;
 		}
 		expect(msg).toContain("TWITTER_APP_KEY");
+	});
+
+	it("requires only XQUIK_API_KEY for Xquik backend startup", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		const { TwitterService } = await import("../services/twitter-service.js");
+		expect(() => new TwitterService()).toThrow(CredentialsError);
+
+		process.env.XQUIK_API_KEY = "test-key";
+		expect(() => new TwitterService()).not.toThrow();
+	});
+
+	it("maps an exact Xquik user match into Twitter profile fields", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		process.env.XQUIK_BASE_URL = "https://xquik.test/api/v1";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						JSON.stringify({
+							users: [
+								{
+									id: "42",
+									username: "xquikcom",
+									name: "Xquik",
+									description: "X automation platform",
+									followers: 100,
+									following: 5,
+									statusesCount: 250,
+									profilePicture: "https://example.com/avatar.png",
+								},
+							],
+						}),
+						{ status: 200 },
+					),
+			),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+		const user = await new TwitterService().getUserInfo("XquikCom");
+
+		expect(user.id).toBe("42");
+		expect(user.public_metrics.followers_count).toBe(100);
+		expect(fetch).toHaveBeenCalledWith(
+			new URL("https://xquik.test/api/v1/x/users/search?q=XquikCom"),
+			expect.objectContaining({
+				headers: { "x-api-key": "test-key" },
+				signal: expect.any(AbortSignal),
+			}),
+		);
+	});
+
+	it("rejects Xquik user search when no exact username matches", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						JSON.stringify({
+							users: [
+								{
+									id: "43",
+									username: "differentuser",
+									name: "Different User",
+								},
+							],
+						}),
+						{ status: 200 },
+					),
+			),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+		await expect(
+			new TwitterService().getUserInfo("expectedUsername"),
+		).rejects.toThrow("Failed to get user info: No Twitter/X user found");
+	});
+
+	it("rejects malformed Xquik user search entries", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						JSON.stringify({ users: [{ id: "43", name: "Missing Username" }] }),
+						{ status: 200 },
+					),
+			),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
+			"Failed to get user info: No Twitter/X user found",
+		);
+	});
+
+	it("wraps aborted Xquik requests as timeout errors", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		process.env.XQUIK_TIMEOUT_MS = "500";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new DOMException("The operation was aborted.", "AbortError");
+			}),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
+			"Failed to get user info: Xquik API timeout after 500ms",
+		);
+	});
+
+	it("reads nested Xquik error messages", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						JSON.stringify({
+							error: { message: "Search temporarily unavailable" },
+						}),
+						{ status: 503 },
+					),
+			),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+		await expect(new TwitterService().getUserInfo("xquikcom")).rejects.toThrow(
+			"Failed to get user info: Xquik API error (HTTP 503): Search temporarily unavailable",
+		);
+	});
+
+	it("maps valid Xquik tweets into the existing paginator shape", async () => {
+		clearEnv(TWITTER_KEYS);
+		process.env.TWITTER_BACKEND = "xquik";
+		process.env.XQUIK_API_KEY = "test-key";
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(
+				async () =>
+					new Response(
+						JSON.stringify({
+							tweets: [
+								{
+									id: "123",
+									text: "MCP read backend result",
+									likeCount: 9,
+									author: { id: "42", username: "author" },
+								},
+								{ id: 999, text: "malformed" },
+							],
+							next_cursor: "next",
+						}),
+						{ status: 200 },
+					),
+			),
+		);
+
+		const { TwitterService } = await import("../services/twitter-service.js");
+		const result = await new TwitterService().searchTweets("MCP", 10);
+
+		expect(result.tweets).toHaveLength(1);
+		expect(result.tweets[0]?.id).toBe("123");
+		expect(result.tweets[0]?.public_metrics.like_count).toBe(9);
+		expect(result.meta).toEqual({ result_count: 1, next_token: "next" });
+		expect(fetch).toHaveBeenCalledWith(
+			new URL(
+				"https://xquik.com/api/v1/x/tweets/search?q=MCP&queryType=Latest&limit=10",
+			),
+			expect.objectContaining({
+				headers: { "x-api-key": "test-key" },
+				signal: expect.any(AbortSignal),
+			}),
+		);
 	});
 });
 

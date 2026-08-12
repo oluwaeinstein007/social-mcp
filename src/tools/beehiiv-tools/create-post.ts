@@ -1,11 +1,17 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { BeehiivService, getBeehiivService } from "../../services/beehiiv-service.js";
+import {
+	BeehiivService,
+	getBeehiivService,
+} from "../../services/beehiiv-service.js";
 
 const params = z.object({
 	title: z.string().min(1).describe("Newsletter subject line / title"),
 	bodyHtml: z.string().min(1).describe("Post body as HTML"),
-	subtitle: z.string().optional().describe("Preview text shown in email clients below the subject line"),
+	subtitle: z
+		.string()
+		.optional()
+		.describe("Preview text shown in email clients below the subject line"),
 	status: z
 		.enum(["draft", "confirmed"])
 		.optional()
@@ -16,20 +22,32 @@ const params = z.object({
 		.optional()
 		.default("free")
 		.describe("Who receives this post (default: free subscribers)"),
-	publicationId: z.string().optional().describe("Beehiiv publication ID (overrides BEEHIIV_PUBLICATION_ID env var)"),
-	apiKey: z.string().optional().describe("Beehiiv API key (overrides BEEHIIV_API_KEY env var)"),
+	publicationId: z
+		.string()
+		.optional()
+		.describe(
+			"Beehiiv publication ID (overrides BEEHIIV_PUBLICATION_ID env var)",
+		),
+	apiKey: z
+		.string()
+		.optional()
+		.describe("Beehiiv API key (overrides BEEHIIV_API_KEY env var)"),
 });
 
 type Params = z.infer<typeof params>;
 
 export const createPostTool = {
 	name: "BEEHIIV_CREATE_POST",
-	description: "Create a newsletter post on Beehiiv. Set status to 'confirmed' to schedule it for sending.",
+	description:
+		"Create a newsletter post on Beehiiv. Set status to 'confirmed' to schedule it for sending.",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {
 			const service = p.apiKey
-				? new BeehiivService({ apiKey: p.apiKey, publicationId: p.publicationId })
+				? new BeehiivService({
+						apiKey: p.apiKey,
+						publicationId: p.publicationId,
+					})
 				: getBeehiivService();
 
 			const result = await service.createPost(

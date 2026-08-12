@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { META_API_VERSION, config } from "../lib/config.js";
+import { config, META_API_VERSION } from "../lib/config.js";
 
 describe("config", () => {
 	it("META_API_VERSION is a valid Graph API version string", () => {

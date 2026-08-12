@@ -3,13 +3,6 @@ import { config } from "../lib/config.js";
 import { CredentialsError } from "../lib/errors.js";
 import { createProxyDispatcher } from "../lib/proxy.js";
 
-const publicationSchema = z.object({
-	id: z.string(),
-	title: z.string().optional(),
-	url: z.string().optional(),
-	displayTitle: z.string().optional(),
-});
-
 const postSchema = z.object({
 	id: z.string(),
 	title: z.string(),

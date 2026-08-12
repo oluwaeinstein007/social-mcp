@@ -7,21 +7,31 @@ const params = z.object({
 	title: z.string().min(1).max(255).optional().describe("New title"),
 	bodyMarkdown: z.string().optional().describe("New body content in Markdown"),
 	published: z.boolean().optional().describe("Set to true to publish a draft"),
-	tags: z.array(z.string()).max(4).optional().describe("Updated tags (replaces existing tags)"),
+	tags: z
+		.array(z.string())
+		.max(4)
+		.optional()
+		.describe("Updated tags (replaces existing tags)"),
 	description: z.string().max(160).optional().describe("New short description"),
 	canonicalUrl: z.string().url().optional().describe("New canonical URL"),
-	apiKey: z.string().optional().describe("Dev.to API key (overrides DEVTO_API_KEY env var)"),
+	apiKey: z
+		.string()
+		.optional()
+		.describe("Dev.to API key (overrides DEVTO_API_KEY env var)"),
 });
 
 type Params = z.infer<typeof params>;
 
 export const updateArticleTool = {
 	name: "DEVTO_UPDATE_ARTICLE",
-	description: "Update an existing Dev.to article. Only provided fields are changed.",
+	description:
+		"Update an existing Dev.to article. Only provided fields are changed.",
 	parameters: params,
 	execute: async (p: Params) => {
 		try {
-			const service = p.apiKey ? new DevToService({ apiKey: p.apiKey }) : getDevToService();
+			const service = p.apiKey
+				? new DevToService({ apiKey: p.apiKey })
+				: getDevToService();
 
 			const updates: Record<string, unknown> = {};
 			if (p.title !== undefined) updates.title = p.title;

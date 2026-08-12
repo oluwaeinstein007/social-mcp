@@ -1,11 +1,20 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { TumblrService, getTumblrService } from "../../services/tumblr-service.js";
+import {
+	getTumblrService,
+	TumblrService,
+} from "../../services/tumblr-service.js";
 
 const params = z.object({
 	postId: z.string().describe("Post ID to delete (from TUMBLR_GET_POSTS)"),
-	blogIdentifier: z.string().optional().describe("Blog name or URL (overrides TUMBLR_BLOG_IDENTIFIER env var)"),
-	accessToken: z.string().optional().describe("Tumblr OAuth token (overrides TUMBLR_ACCESS_TOKEN env var)"),
+	blogIdentifier: z
+		.string()
+		.optional()
+		.describe("Blog name or URL (overrides TUMBLR_BLOG_IDENTIFIER env var)"),
+	accessToken: z
+		.string()
+		.optional()
+		.describe("Tumblr OAuth token (overrides TUMBLR_ACCESS_TOKEN env var)"),
 });
 
 type Params = z.infer<typeof params>;
@@ -17,7 +26,10 @@ export const deletePostTool = {
 	execute: async (p: Params) => {
 		try {
 			const service = p.accessToken
-				? new TumblrService({ accessToken: p.accessToken, blogIdentifier: p.blogIdentifier })
+				? new TumblrService({
+						accessToken: p.accessToken,
+						blogIdentifier: p.blogIdentifier,
+					})
 				: getTumblrService();
 
 			await service.deletePost(p.postId, p.blogIdentifier);
