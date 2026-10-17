@@ -31,6 +31,18 @@ const directPostVideoParams = z.object({
 		.boolean()
 		.default(false)
 		.describe("Disable stitch for this video"),
+	brandOrganicToggle: z
+		.boolean()
+		.default(false)
+		.describe(
+			"Commercial content disclosure — set true when the video promotes the creator's own business ('Your brand'). Required by TikTok's Content Posting API terms for promotional content.",
+		),
+	brandContentToggle: z
+		.boolean()
+		.default(false)
+		.describe(
+			"Commercial content disclosure — set true for a paid partnership promoting someone else ('Branded content'). TikTok rejects this combined with privacyLevel SELF_ONLY.",
+		),
 });
 
 type DirectPostVideoParams = z.infer<typeof directPostVideoParams>;
@@ -49,6 +61,8 @@ export const directPostVideoTool = {
 				params.disableDuet,
 				params.disableComment,
 				params.disableStitch,
+				params.brandContentToggle,
+				params.brandOrganicToggle,
 			);
 			if (result.error?.code && result.error.code !== "ok") {
 				return `TikTok API error: ${result.error.message}`;

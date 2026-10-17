@@ -113,6 +113,26 @@ export class TikTokService {
 		);
 	}
 
+	/**
+	 * Post a video by URL.
+	 *
+	 * `brandContentToggle` / `brandOrganicToggle` are TikTok's commercial-content disclosure
+	 * flags and are required for compliance with their Content Posting API terms whenever a
+	 * post promotes anything:
+	 *   - brandOrganicToggle — the creator is promoting their own business ("Your brand")
+	 *   - brandContentToggle — the post is a paid partnership promoting someone else
+	 *     ("Branded content")
+	 * Both default to false (not commercial content), which is the previous behaviour, so
+	 * existing callers are unaffected.
+	 *
+	 * TikTok rejects branded content posted to a private audience, so the SELF_ONLY
+	 * combination is refused here with a clear message rather than being sent and coming back
+	 * as an opaque provider error.
+	 *
+	 * New parameters are appended positionally and optional on purpose: this method is called
+	 * directly (not only through the MCP tool) by consumers that import the built service, so
+	 * reordering into an options object would be a breaking change for them.
+	 */
 	async directPostVideo(
 		videoUrl: string,
 		title: string,
@@ -120,7 +140,14 @@ export class TikTokService {
 		disableDuet = false,
 		disableComment = false,
 		disableStitch = false,
+		brandContentToggle = false,
+		brandOrganicToggle = false,
 	) {
+		if (brandContentToggle && privacyLevel === "SELF_ONLY") {
+			throw new Error(
+				"TikTok does not allow branded content to be posted with privacy_level SELF_ONLY. Choose a non-private audience, or turn off the paid-partnership disclosure.",
+			);
+		}
 		const body = {
 			post_info: {
 				title,
@@ -128,6 +155,8 @@ export class TikTokService {
 				disable_duet: disableDuet,
 				disable_comment: disableComment,
 				disable_stitch: disableStitch,
+				brand_content_toggle: brandContentToggle,
+				brand_organic_toggle: brandOrganicToggle,
 			},
 			source_info: {
 				source: "PULL_FROM_URL",
