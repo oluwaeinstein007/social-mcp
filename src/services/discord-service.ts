@@ -83,7 +83,10 @@ export class DiscordService {
 				{
 					method: "POST",
 					headers: this.headers,
-					body: JSON.stringify({ content, ...(embeds?.length ? { embeds } : {}) }),
+					body: JSON.stringify({
+						content,
+						...(embeds?.length ? { embeds } : {}),
+					}),
 					dispatcher: this.dispatcher,
 				},
 				discordMessageSchema,
@@ -202,7 +205,11 @@ export class DiscordService {
 
 	// Spins up a thread rooted at an existing message in a normal text channel —
 	// separate from createForumPost, which creates the message and thread together.
-	async createThreadFromMessage(channelId: string, messageId: string, name: string) {
+	async createThreadFromMessage(
+		channelId: string,
+		messageId: string,
+		name: string,
+	) {
 		return fetchJson(
 			`${this.baseUrl}/channels/${channelId}/messages/${messageId}/threads`,
 			{

@@ -1,11 +1,31 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { HashnodeService, getHashnodeService } from "../../services/hashnode-service.js";
+import {
+	getHashnodeService,
+	HashnodeService,
+} from "../../services/hashnode-service.js";
 
 const params = z.object({
-	first: z.number().int().min(1).max(50).optional().default(10).describe("Number of posts to fetch (default: 10, max: 50)"),
-	publicationId: z.string().optional().describe("Hashnode publication ID (overrides HASHNODE_PUBLICATION_ID env var)"),
-	accessToken: z.string().optional().describe("Hashnode Personal Access Token (overrides HASHNODE_ACCESS_TOKEN env var)"),
+	first: z
+		.number()
+		.int()
+		.min(1)
+		.max(50)
+		.optional()
+		.default(10)
+		.describe("Number of posts to fetch (default: 10, max: 50)"),
+	publicationId: z
+		.string()
+		.optional()
+		.describe(
+			"Hashnode publication ID (overrides HASHNODE_PUBLICATION_ID env var)",
+		),
+	accessToken: z
+		.string()
+		.optional()
+		.describe(
+			"Hashnode Personal Access Token (overrides HASHNODE_ACCESS_TOKEN env var)",
+		),
 });
 
 type Params = z.infer<typeof params>;
@@ -17,14 +37,18 @@ export const getPostsTool = {
 	execute: async (p: Params) => {
 		try {
 			const service = p.accessToken
-				? new HashnodeService({ accessToken: p.accessToken, publicationId: p.publicationId })
+				? new HashnodeService({
+						accessToken: p.accessToken,
+						publicationId: p.publicationId,
+					})
 				: getHashnodeService();
 
 			const pub = await service.getPosts(p.publicationId, p.first ?? 10);
 			if (!pub) return "Publication not found.";
 
 			const posts = pub.posts?.edges ?? [];
-			if (!posts.length) return `No posts found in publication "${pub.title ?? pub.id}".`;
+			if (!posts.length)
+				return `No posts found in publication "${pub.title ?? pub.id}".`;
 
 			return [
 				`Publication: ${pub.title ?? pub.id}`,
@@ -38,7 +62,9 @@ export const getPostsTool = {
 						...(post.url ? [`   URL: ${post.url}`] : []),
 						...(post.publishedAt ? [`   Published: ${post.publishedAt}`] : []),
 						...(tags ? [`   Tags: ${tags}`] : []),
-						...(post.reactionCount != null ? [`   Reactions: ${post.reactionCount}`] : []),
+						...(post.reactionCount != null
+							? [`   Reactions: ${post.reactionCount}`]
+							: []),
 					].join("\n");
 				}),
 			].join("\n");

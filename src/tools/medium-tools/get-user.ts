@@ -1,12 +1,17 @@
 import { z } from "zod";
 import { CredentialsError } from "../../lib/errors.js";
-import { getMediumService, MediumService } from "../../services/medium-service.js";
+import {
+	getMediumService,
+	MediumService,
+} from "../../services/medium-service.js";
 
 const getUserParams = z.object({
 	accessToken: z
 		.string()
 		.optional()
-		.describe("Medium integration token (overrides MEDIUM_ACCESS_TOKEN env var)"),
+		.describe(
+			"Medium integration token (overrides MEDIUM_ACCESS_TOKEN env var)",
+		),
 });
 
 type GetUserParams = z.infer<typeof getUserParams>;
