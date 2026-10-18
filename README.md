@@ -454,9 +454,11 @@ Set `MAIL_MAILER` to select your provider (`smtp`, `sendgrid`, `mailgun`, or `se
 
 - **TIKTOK_QUERY_CREATOR_INFO** — Query creator info including posting permissions and privacy options
 - **TIKTOK_GET_USER_INFO** — Get TikTok account profile and stats
-- **TIKTOK_DIRECT_POST_VIDEO** — Post a video by URL (`videoUrl`, `title`, `privacyLevel`, ...)
+- **TIKTOK_DIRECT_POST_VIDEO** — Post a video by URL (`videoUrl`, `title`, `privacyLevel`, `disableDuet`, `disableComment`, `disableStitch`, `brandOrganicToggle`, `brandContentToggle`)
 - **TIKTOK_PHOTO_POST** — Create a photo/carousel post (`photoUrls`, `title`, `description`, `privacyLevel`)
 - **TIKTOK_GET_POST_STATUS** — Check the publishing status of a video or photo post (`publishId`)
+
+> **Commercial content disclosure:** `brandOrganicToggle` marks the post as promoting your own business (TikTok shows it as *“Your brand”*); `brandContentToggle` marks it as a paid partnership promoting someone else (*“Branded content”*). TikTok's API terms require one of these on any promotional post, and their app review checks that your posting UI offers the choice — so surface it to the user rather than hardcoding it. Both default to `false`, meaning not commercial content. TikTok rejects branded content on a private audience, so `brandContentToggle` with `privacyLevel: "SELF_ONLY"` is refused locally with an explanatory error instead of being sent and failing opaquely.
 
 > **Note:** TikTok's Content Posting API requires app approval from [TikTok for Developers](https://developers.tiktok.com). Videos are pulled from a public URL by TikTok's servers (`PULL_FROM_URL`) rather than uploaded directly — TikTok's alternative `FILE_UPLOAD` mode (chunked byte upload for base64/local content) is not yet implemented here; if you need it, it's the same style of lease-then-PUT flow used for LinkedIn/Reddit media above.
 
